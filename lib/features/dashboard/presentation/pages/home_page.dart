@@ -20,6 +20,11 @@ class HomePage extends ConsumerWidget {
         title: const Text('Caloris'),
         actions: [
           IconButton(
+            tooltip: 'Jadwal dan reminder',
+            onPressed: () => context.push('/schedule'),
+            icon: const Icon(Icons.calendar_month_outlined),
+          ),
+          IconButton(
             tooltip: 'Profil saya',
             onPressed: () => context.go('/profile'),
             icon: const Icon(Icons.account_circle_outlined),
@@ -150,6 +155,12 @@ class HomePage extends ConsumerWidget {
               onPressed: () => context.go('/diary'),
               icon: const Icon(Icons.restaurant_menu_rounded),
               label: const Text('Buka Diary Makanan'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => context.push('/schedule'),
+              icon: const Icon(Icons.notifications_active_outlined),
+              label: const Text('Jadwal & Reminder'),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(

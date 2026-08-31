@@ -1,6 +1,23 @@
 # Caloris Task List
 
-Status: **Phase 1 complete — 2026-09-01**
+Status: **Phase 3 complete — 2026-09-01**
+
+## Phase 2: Daily calorie and food loop
+
+- [x] BMI, BMR, TDEE, and safe calorie targets are calculated in a pure service.
+- [x] Dashboard, food diary, manual input, meal builder, favorites, and quick add work through repositories/controllers.
+- [x] Phase 2 analysis and tests pass; green checkpoints are pushed.
+
+## Phase 3: Progress, schedule, and habits
+
+- [x] Weight history, target progress, and chart are connected to Supabase.
+- [x] Water shortcuts and editable profile target are connected to Supabase.
+- [x] Light/custom activity entries remain separate from calorie allowance.
+- [x] Weekly schedule supports add, edit, delete, category, and busyness.
+- [x] Reminder supports type, time, days, enabled state, local scheduling, and deletion.
+- [x] Notification permission is requested only from a user-triggered reminder action.
+- [x] Android notification receivers/desugaring and iOS foreground delegate are configured.
+- [x] `flutter analyze`, 21 tests, and Android debug APK build pass.
 
 ## Task 1: Bootstrap Flutter foundation
 
@@ -105,4 +122,3 @@ and platform build checks available on this Windows host.
 - [x] Flutter analysis, tests, and Android debug build pass.
 - [x] Remaining requirements are preserved in `tasks/plan.md` Phases 2–7.
 - [x] No commit or push was performed without explicit user authorization.
-
