@@ -19,6 +19,16 @@ Status: **Phase 3 complete — 2026-09-01**
 - [x] Android notification receivers/desugaring and iOS foreground delegate are configured.
 - [x] `flutter analyze`, 21 tests, and Android debug APK build pass.
 
+## Phase 4: Editable food scan
+
+- [x] Camera and gallery selection are scoped to food photos with lost-data recovery.
+- [x] Preview, analyze, rescan, manual fallback, add/remove/edit components, and Diary confirmation work.
+- [x] Development mock is disabled by default and visibly labelled when enabled.
+- [x] Photos are not uploaded by default; optional retention uses the private owner path.
+- [x] Corrected structured results are stored in scan history through a repository.
+- [x] Bottom navigation now exposes the requested Home, Diary, Scan, Progress, and Profile destinations.
+- [x] `flutter analyze`, 24 tests, and Android debug APK build pass.
+
 ## Task 1: Bootstrap Flutter foundation
 
 **Description:** Create the Android/iOS application, dependency manifest, strict

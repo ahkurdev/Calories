@@ -10,6 +10,8 @@ import 'package:caloris/features/food/presentation/pages/favorite_meals_page.dar
 import 'package:caloris/features/food/presentation/pages/food_diary_page.dart';
 import 'package:caloris/features/food/presentation/pages/manual_food_page.dart';
 import 'package:caloris/features/food/presentation/pages/meal_builder_page.dart';
+import 'package:caloris/features/food_scan/presentation/pages/food_scan_page.dart';
+import 'package:caloris/features/food_scan/presentation/pages/scan_history_page.dart';
 import 'package:caloris/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:caloris/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:caloris/features/profile/presentation/pages/profile_page.dart';
@@ -74,6 +76,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingPage()),
       GoRoute(path: '/home', builder: (_, _) => const HomePage()),
       GoRoute(path: '/diary', builder: (_, _) => const FoodDiaryPage()),
+      GoRoute(path: '/scan', builder: (_, _) => const FoodScanPage()),
+      GoRoute(
+        path: '/scan/history',
+        builder: (_, _) => const ScanHistoryPage(),
+      ),
       GoRoute(
         path: '/food/new',
         builder: (_, state) => ManualFoodPage(

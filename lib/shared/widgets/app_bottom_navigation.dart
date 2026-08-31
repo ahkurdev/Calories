@@ -11,6 +11,7 @@ class AppBottomNavigation extends StatelessWidget {
     const destinations = <({String route, IconData icon, String label})>[
       (route: '/home', icon: Icons.home_outlined, label: 'Home'),
       (route: '/diary', icon: Icons.menu_book_outlined, label: 'Diary'),
+      (route: '/scan', icon: Icons.camera_alt_rounded, label: 'Scan'),
       (route: '/progress', icon: Icons.insights_outlined, label: 'Progress'),
       (route: '/profile', icon: Icons.person_outline_rounded, label: 'Profile'),
     ];

@@ -151,6 +151,34 @@ class HomePage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => context.go('/scan'),
+                    icon: const Icon(Icons.camera_alt_outlined),
+                    label: const Text('Scan'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => context.push('/food/new'),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Makanan'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => context.go('/progress'),
+                    icon: const Icon(Icons.monitor_weight_outlined),
+                    label: const Text('Berat'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: () => context.go('/diary'),
               icon: const Icon(Icons.restaurant_menu_rounded),

@@ -37,6 +37,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Caloris menggunakan kamera hanya untuk memotret makanan atau minuman yang ingin kamu catat.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Caloris membuka foto yang kamu pilih untuk analisis makanan dan koreksi sebelum disimpan.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

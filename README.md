@@ -9,7 +9,7 @@ never a general chatbot or coding/file assistant.
 
 ## Current status
 
-Phase 1 is implemented:
+Phases 1–4 are implemented:
 
 - Android/iOS Flutter project and feature-first architecture
 - Material 3 light/dark themes
@@ -21,9 +21,14 @@ Phase 1 is implemented:
 - explicit Data API grants, RLS, indexes, constraints, and update triggers
 - private `food-scans` Storage bucket and owner-folder policies
 - remote Supabase migration/advisor verification
+- calorie dashboard, diary, manual food, meal builder, favorites, and quick add
+- weight, water, activity, weekly schedule, and local reminder tracking
+- food-only camera/gallery flow, preview, editable estimates, confirmation,
+  private optional photo retention, and scan history
+- explicit development mock mode that is visibly labelled and disabled by default
 
-Features from Phases 2–7 are intentionally not shown as working UI. The complete
-roadmap and architecture are in [`tasks/plan.md`](tasks/plan.md).
+Phase 5 AI backend work is tracked in [`tasks/plan.md`](tasks/plan.md). Until it
+is configured, production mode gives an honest manual-input fallback.
 
 ## Requirements
 
@@ -48,6 +53,7 @@ Set the public client values in `.env`:
 ```text
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_your_key
+CALORIS_USE_MOCK_AI=false
 ```
 
 The variable name follows the master requirement; the value can be a current
@@ -120,8 +126,9 @@ The private bucket is `food-scans`. Expected object paths are:
 ```
 
 Storage policies compare the first folder segment to `auth.uid()`. The bucket
-accepts JPEG, PNG, and WebP up to 10 MB. Phase 4 will add the food-only camera
-flow and the option to delete an image immediately after analysis.
+accepts JPEG, PNG, and WebP up to 10 MB. Food scans do not upload the selected
+photo by default. A photo is uploaded only after the user explicitly disables
+“Jangan simpan foto setelah analisis” and confirms saving the corrected result.
 
 ## Authentication configuration
 
@@ -157,10 +164,10 @@ Do not commit these values, return them from an Edge Function, or place them in
 Flutter. OpenRouter will be free-model-only by default, and OpenCode Zen will use
 only a server-side model allowlist.
 
-## Camera permissions (Phase 4)
+## Camera permissions and development mock
 
-Camera/image picker dependencies and permissions are deliberately deferred until
-the real scan flow exists. When Phase 4 is implemented, add:
+The food-only scan flow uses `image_picker`. Android declares an optional camera
+feature and camera permission; iOS includes these purpose strings:
 
 Android `android/app/src/main/AndroidManifest.xml`:
 
@@ -177,7 +184,9 @@ iOS `ios/Runner/Info.plist`:
 <string>Caloris menggunakan foto yang kamu pilih hanya untuk analisis makanan.</string>
 ```
 
-Do not add these until the feature is functional and its permission UX exists.
+To test the visibly labelled deterministic development result without claiming
+that production AI is active, set `CALORIS_USE_MOCK_AI=true`. Keep it `false`
+for production builds.
 
 ## Testing
 
@@ -186,9 +195,9 @@ flutter analyze
 flutter test
 ```
 
-The current tests cover build-time configuration, validation, profile domain
-mapping and health bounds, the Auth controller/repository boundary, and the
-honest unconfigured application state.
+The current tests cover configuration, calorie calculations, Auth, profile,
+food aggregation, progress, schedule validation, scan schema bounds, the visible
+estimate disclaimer, and the explicit mock label.
 
 Remote database verification without Docker:
 
@@ -234,4 +243,3 @@ Domain code does not import Supabase. Widgets never issue SQL or provider API
 requests. See [`tasks/plan.md`](tasks/plan.md) and [`tasks/todo.md`](tasks/todo.md)
 for the architecture decisions, AI restrictions, migration plan, and phased
 acceptance criteria.
-
