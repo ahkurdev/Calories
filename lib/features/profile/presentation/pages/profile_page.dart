@@ -1,6 +1,7 @@
 import 'package:caloris/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:caloris/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:caloris/features/profile/presentation/widgets/profile_form.dart';
+import 'package:caloris/shared/widgets/app_bottom_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +15,7 @@ class ProfilePage extends ConsumerWidget {
     final auth = ref.watch(authControllerProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Profil saya')),
+      bottomNavigationBar: const AppBottomNavigation(currentRoute: '/profile'),
       body: profile.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(

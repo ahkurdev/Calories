@@ -5,6 +5,11 @@ import 'package:caloris/features/auth/presentation/pages/login_page.dart';
 import 'package:caloris/features/auth/presentation/pages/password_pages.dart';
 import 'package:caloris/features/auth/presentation/pages/register_page.dart';
 import 'package:caloris/features/dashboard/presentation/pages/home_page.dart';
+import 'package:caloris/features/food/domain/food_models.dart';
+import 'package:caloris/features/food/presentation/pages/favorite_meals_page.dart';
+import 'package:caloris/features/food/presentation/pages/food_diary_page.dart';
+import 'package:caloris/features/food/presentation/pages/manual_food_page.dart';
+import 'package:caloris/features/food/presentation/pages/meal_builder_page.dart';
 import 'package:caloris/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:caloris/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:caloris/features/profile/presentation/pages/profile_page.dart';
@@ -66,6 +71,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/loading', builder: (_, _) => const ProfileLoadingPage()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingPage()),
       GoRoute(path: '/home', builder: (_, _) => const HomePage()),
+      GoRoute(path: '/diary', builder: (_, _) => const FoodDiaryPage()),
+      GoRoute(
+        path: '/food/new',
+        builder: (_, state) => ManualFoodPage(
+          initialMealType: state.uri.queryParameters['meal'] == null
+              ? null
+              : MealType.fromDatabase(state.uri.queryParameters['meal']!),
+        ),
+      ),
+      GoRoute(
+        path: '/meal-builder',
+        builder: (_, _) => const MealBuilderPage(),
+      ),
+      GoRoute(path: '/favorites', builder: (_, _) => const FavoriteMealsPage()),
       GoRoute(path: '/profile', builder: (_, _) => const ProfilePage()),
     ],
   );

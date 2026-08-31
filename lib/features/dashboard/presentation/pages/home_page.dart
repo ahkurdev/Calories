@@ -1,5 +1,7 @@
 import 'package:caloris/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:caloris/features/dashboard/presentation/controllers/dashboard_providers.dart';
 import 'package:caloris/features/profile/presentation/controllers/profile_controller.dart';
+import 'package:caloris/shared/widgets/app_bottom_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +13,8 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileControllerProvider).value;
+    final calculation = ref.watch(calorieCalculationProvider);
+    final foodSummary = ref.watch(dailyFoodSummaryProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Caloris'),
@@ -22,8 +26,12 @@ class HomePage extends ConsumerWidget {
           ),
         ],
       ),
+      bottomNavigationBar: const AppBottomNavigation(currentRoute: '/home'),
       body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(profileControllerProvider),
+        onRefresh: () async {
+          ref.invalidate(profileControllerProvider);
+          ref.invalidate(dailyFoodSummaryProvider);
+        },
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
@@ -35,23 +43,59 @@ class HomePage extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(DateFormat('EEEE, d MMMM yyyy').format(DateTime.now())),
             const SizedBox(height: 24),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Fondasi profil siap',
-                      style: Theme.of(context).textTheme.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Dashboard kalori, makanan, air, dan aktivitas akan '
-                      'diaktifkan sebagai fitur lengkap pada fase berikutnya.',
-                    ),
-                  ],
+            foodSummary.when(
+              loading: () => const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
+              error: (error, _) => Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text('Ringkasan makanan belum tersedia: $error'),
+                ),
+              ),
+              data: (summary) => Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _CalorieValue(
+                              label: 'Target',
+                              value: summary.targetCalories,
+                            ),
+                          ),
+                          Expanded(
+                            child: _CalorieValue(
+                              label: 'Consumed',
+                              value: summary.consumedCalories,
+                            ),
+                          ),
+                          Expanded(
+                            child: _CalorieValue(
+                              label: 'Remaining',
+                              value: summary.remainingCalories,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      LinearProgressIndicator(value: summary.progress),
+                      if (summary.overTargetCalories > 0) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Hari ini sekitar ${summary.overTargetCalories} kcal '
+                          'di atas target. Tidak apa-apa—lanjutkan catatan '
+                          'secara konsisten.',
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -79,6 +123,21 @@ class HomePage extends ConsumerWidget {
             Card(
               child: ListTile(
                 contentPadding: const EdgeInsets.all(16),
+                leading: const Icon(Icons.calculate_outlined),
+                title: const Text('Perhitungan dasar'),
+                subtitle: Text(
+                  calculation == null
+                      ? 'Belum tersedia'
+                      : 'BMI ${calculation.bmi.toStringAsFixed(1)} • '
+                            'BMR ${calculation.bmr.round()} • '
+                            'TDEE ${calculation.tdee.round()} kcal',
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(16),
                 leading: const Icon(Icons.track_changes_rounded),
                 title: Text(profile?.goal.label ?? 'Tujuan belum tersedia'),
                 subtitle: Text(profile?.activityLevel.label ?? ''),
@@ -86,7 +145,13 @@ class HomePage extends ConsumerWidget {
                 onTap: () => context.go('/profile'),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => context.go('/diary'),
+              icon: const Icon(Icons.restaurant_menu_rounded),
+              label: const Text('Buka Diary Makanan'),
+            ),
+            const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () =>
                   ref.read(authControllerProvider.notifier).signOut(),
@@ -98,6 +163,28 @@ class HomePage extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _CalorieValue extends StatelessWidget {
+  const _CalorieValue({required this.label, required this.value});
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: Theme.of(context).textTheme.labelMedium),
+      const SizedBox(height: 4),
+      Text(
+        '$value',
+        style: Theme.of(context).textTheme.titleLarge
+            ?.copyWith(fontWeight: FontWeight.w800),
+      ),
+      const Text('kcal'),
+    ],
+  );
 }
 
 class _MetricCard extends StatelessWidget {
