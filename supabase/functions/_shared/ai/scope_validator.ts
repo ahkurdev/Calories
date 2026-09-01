@@ -104,6 +104,27 @@ export class AIScopeValidator {
         "Food image is invalid or too large.",
       );
     }
+    let bytes: Uint8Array;
+    try {
+      bytes = Uint8Array.from(
+        atob(value.base64),
+        (character) => character.charCodeAt(0),
+      );
+    } catch {
+      throw new AIError(
+        "unsupported_vision",
+        "Food image is not valid base64.",
+      );
+    }
+    if (bytes.length === 0 || bytes.length > 10 * 1024 * 1024) {
+      throw new AIError("unsupported_vision", "Food image size is invalid.");
+    }
+    if (!matchesImageSignature(String(value.mimeType), bytes)) {
+      throw new AIError(
+        "unsupported_vision",
+        "Food image content does not match its media type.",
+      );
+    }
   }
 
   private static rejectDangerousContent(value: unknown, key?: string) {
@@ -130,6 +151,21 @@ export class AIScopeValidator {
       }
     }
   }
+}
+
+function matchesImageSignature(mimeType: string, bytes: Uint8Array): boolean {
+  if (mimeType === "image/jpeg") {
+    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 &&
+      bytes[2] === 0xff;
+  }
+  if (mimeType === "image/png") {
+    const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    return bytes.length >= signature.length &&
+      signature.every((value, index) => bytes[index] === value);
+  }
+  return bytes.length >= 12 &&
+    String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" &&
+    String.fromCharCode(...bytes.slice(8, 12)) === "WEBP";
 }
 
 function validateFoodEstimationInput(value: unknown) {

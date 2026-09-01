@@ -14,9 +14,19 @@ function assertThrows(fn: () => unknown, expectedCode: string) {
 
 Deno.test("scope validator accepts a typed food scan request", () => {
   AIScopeValidator.validate(AITaskType.foodScan, {
-    image: { mimeType: "image/jpeg", base64: "aGVsbG8=" },
+    image: { mimeType: "image/jpeg", base64: "/9j/" },
     mealContext: "makan siang",
   });
+});
+
+Deno.test("scope validator rejects a spoofed image MIME type", () => {
+  assertThrows(
+    () =>
+      AIScopeValidator.validate(AITaskType.foodScan, {
+        image: { mimeType: "image/jpeg", base64: "aGVsbG8=" },
+      }),
+    "unsupported_vision",
+  );
 });
 
 Deno.test("scope validator rejects unknown task before provider dispatch", () => {

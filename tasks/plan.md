@@ -314,6 +314,8 @@ features are implemented. All versions are resolved and pinned in
 - Compute statistics deterministically, then request scoped meal/activity/
   schedule recommendations and neutral daily/weekly summaries.
 - Gate: structured input minimization and non-judgmental output checks pass.
+- Status: complete on 2026-09-01. Statistics are deterministic and every AI
+  action uses a feature-specific endpoint with a minimal payload.
 
 ### Phase 7 — Resilience and release
 
@@ -322,6 +324,9 @@ features are implemented. All versions are resolved and pinned in
   and release checks for Android/iOS.
 - Gate: full analyze/test/build, RLS multi-user verification, and final master
   requirement checklist pass.
+- Status: implementation complete on 2026-09-01. Unsigned platform artifacts,
+  hosted Auth production values, and live provider smoke tests remain explicit
+  owner-controlled release gates.
 
 ## Architecture Decisions
 

@@ -9,7 +9,7 @@ never a general chatbot or coding/file assistant.
 
 ## Current status
 
-Phases 1–5 are implemented:
+Phases 1–7 are implemented:
 
 - Android/iOS Flutter project and feature-first architecture
 - Material 3 light/dark themes
@@ -33,11 +33,17 @@ Phases 1–5 are implemented:
   manual fallback
 - strict task/input/output validation, prompt-injection rejection, and no
   provider secret exposure to Flutter
+- deterministic daily/weekly statistics and scoped meal/activity/summary UI
+- per-user SQLite profile/diary cache, idempotent food mutation outbox, visible
+  pending-sync state, bounded cache retention, and logout cleanup
+- release-safe Android signing configuration, changelog, rollout, monitoring,
+  and rollback runbook
 
-All five Phase 5 functions are deployed to the linked Supabase project with JWT
-verification enabled. Provider keys are intentionally not committed. Until at
-least one provider is configured through Edge Function secrets, authenticated
-requests return an honest manual-input fallback.
+All five AI functions are deployed to the linked Supabase project with JWT
+verification and per-user worker rate limiting enabled. Provider keys are
+intentionally not committed. Until at least one provider is configured through
+Edge Function secrets, authenticated requests return an honest manual-input
+fallback.
 
 ## Requirements
 
@@ -148,6 +154,12 @@ Auth URL allowlist:
 caloris://reset-password
 ```
 
+For production, configure hosted Auth to require email confirmation, passwords
+of at least eight characters containing letters and digits, secure password
+changes, and an appropriate email resend interval. The checked-in local config
+uses those defaults, but it is not pushed wholesale because its site URL is a
+local development address.
+
 The URL scheme is registered in Android and iOS project files. For production,
 prefer verified Android App Links and iOS Universal Links before release.
 
@@ -198,6 +210,7 @@ AI_TIMEOUT_MS=20000
 AI_MAX_RETRIES=1
 AI_CIRCUIT_FAILURE_THRESHOLD=3
 AI_CIRCUIT_COOLDOWN_MS=60000
+AI_RATE_LIMIT_PER_MINUTE=12
 ```
 
 Deploy all functions through the Supabase API without Docker:
@@ -235,6 +248,15 @@ To test the visibly labelled deterministic development result without claiming
 that production AI is active, set `CALORIS_USE_MOCK_AI=true`. Keep it `false`
 for production builds.
 
+## Offline behavior
+
+Caloris caches the authenticated profile and recently viewed food-diary days in
+a per-user SQLite store. Food additions/deletions that fail because the network
+is unavailable are queued with client-generated UUIDs and retried on later diary
+operations. The UI shows the pending mutation count. Food-day cache entries are
+retained for at most 90 days, and the current owner's cache/outbox is deleted on
+successful logout. Provider responses and scan images are not cached there.
+
 ## Testing
 
 ```bash
@@ -242,14 +264,21 @@ flutter analyze
 flutter test
 npx --yes deno fmt --check supabase/functions
 npx --yes deno test --allow-env supabase/functions/_shared/tests
-npx --yes deno check --config supabase/functions/analyze-food/deno.json supabase/functions/analyze-food/index.ts supabase/functions/recommend-meal/index.ts supabase/functions/generate-daily-summary/index.ts supabase/functions/generate-weekly-summary/index.ts supabase/functions/recommend-activity/index.ts
+npx --yes deno check --config supabase/functions/analyze-food/deno.json supabase/functions/analyze-food/index.ts
+npx --yes deno check --config supabase/functions/recommend-meal/deno.json supabase/functions/recommend-meal/index.ts
+npx --yes deno check --config supabase/functions/generate-daily-summary/deno.json supabase/functions/generate-daily-summary/index.ts
+npx --yes deno check --config supabase/functions/generate-weekly-summary/deno.json supabase/functions/generate-weekly-summary/index.ts
+npx --yes deno check --config supabase/functions/recommend-activity/deno.json supabase/functions/recommend-activity/index.ts
 ```
 
-The current tests cover configuration, calorie calculations, Auth, profile,
+The current gate includes 34 Flutter tests and 18 Deno tests. They cover
+configuration, calorie calculations, Auth, profile,
 food aggregation, progress, schedule validation, scan schema bounds, the visible
 estimate disclaimer, the explicit mock label, mobile function response parsing,
 AI scope enforcement, free-model filtering, provider fallback, timeouts, circuit
-breaking, response normalization, and prompt-injection rejection.
+breaking, per-user rate limiting, response normalization, prompt-injection
+rejection, image media-signature validation, deterministic statistics, minimized
+recommendation payloads, and offline cache/outbox behavior.
 
 Remote database verification without Docker:
 
@@ -273,6 +302,9 @@ Android App Bundle:
 flutter build appbundle --release --dart-define-from-file=.env
 ```
 
+Release builds intentionally fail until `android/key.properties` is created
+from `android/key.properties.example` with private values kept outside Git.
+
 iOS must be built on macOS with a configured signing team:
 
 ```bash
@@ -280,6 +312,9 @@ flutter build ios --release --dart-define-from-file=.env
 ```
 
 Release signing values and real `.env` files must remain outside Git.
+See [`RELEASE.md`](RELEASE.md) for the full external-configuration checklist,
+staged rollout thresholds, monitoring, and rollback procedure. Release history
+is recorded in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Architecture
 
@@ -287,8 +322,10 @@ Release signing values and real `.env` files must remain outside Git.
 UI
   → Riverpod controller
     → repository interface
-      → Supabase repository implementation
-        → Supabase Auth / Data API / Storage / Edge Function
+      → offline-first repository where applicable
+        → per-user SQLite cache/outbox
+        → Supabase repository implementation
+          → Supabase Auth / Data API / Storage / Edge Function
 ```
 
 Domain code does not import Supabase. Widgets never issue SQL or provider API

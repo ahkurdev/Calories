@@ -1,6 +1,6 @@
 # Caloris Task List
 
-Status: **Phase 5 complete — 2026-09-01**
+Status: **Phase 7 implementation complete — 2026-09-01**
 
 ## Phase 2: Daily calorie and food loop
 
@@ -47,6 +47,37 @@ Status: **Phase 5 complete — 2026-09-01**
       live request is rejected with HTTP 401.
 - [x] `flutter analyze`, 25 Flutter tests, 13 Deno tests, Edge Function type-check,
       remote advisors, and Android debug APK build pass.
+
+## Phase 6: Recommendations, summaries, and statistics
+
+- [x] Daily and seven-day statistics are computed deterministically before AI.
+- [x] Meal recommendation uses remaining calories, goal, meal type, minimized
+      history, preference, and practical-food mode.
+- [x] Activity recommendation receives only the selected day's structured
+      schedule without record/user IDs.
+- [x] Daily and weekly summaries use exact typed statistics and neutral UI copy.
+- [x] Flutter parsers distinguish validated AI content from honest fallback.
+- [x] Exact nested request/output schemas reject identity fields and unexpected
+      provider content.
+
+## Phase 7: Resilience, hardening, and release preparation
+
+- [x] Profile and diary reads have a per-user SQLite cache.
+- [x] Offline food mutations use a persistent outbox and idempotent client UUIDs.
+- [x] Pending sync is visible; cache is retained for at most 90 days and removed
+      for the owner after successful logout.
+- [x] AI functions enforce a configurable per-user worker rate limit.
+- [x] Local Auth defaults require confirmation, secure password changes, and
+      letter+digit passwords of at least eight characters.
+- [x] Android release cannot silently use debug signing; a safe template and
+      release/rollback runbook are included.
+- [x] Version 1.0.0 candidate changelog and external production configuration
+      checklist are documented.
+- [x] Final automated gate includes 34 Flutter tests and 18 Deno tests.
+- [ ] Authenticated live-provider smoke test requires an owner-supplied provider
+      key and test account.
+- [ ] Signed Android App Bundle and iOS archive require owner-controlled signing
+      identities and final permanent bundle IDs.
 
 ## Task 1: Bootstrap Flutter foundation
 
