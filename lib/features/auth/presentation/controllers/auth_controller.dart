@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:caloris/core/errors/app_failure.dart';
+import 'package:caloris/core/offline/sqlite_offline_store.dart';
 import 'package:caloris/features/auth/data/supabase_auth_repository.dart';
 import 'package:caloris/features/auth/domain/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,7 +69,15 @@ class AuthController extends Notifier<AuthViewState> {
   Future<bool> updatePassword(String password) =>
       _perform(() => ref.read(authRepositoryProvider).updatePassword(password));
 
-  Future<bool> signOut() => _perform(ref.read(authRepositoryProvider).signOut);
+  Future<bool> signOut() {
+    final ownerId = state.session.userId;
+    return _perform(() async {
+      await ref.read(authRepositoryProvider).signOut();
+      if (ownerId != null) {
+        await ref.read(offlineStoreProvider).clearOwner(ownerId);
+      }
+    });
+  }
 
   void clearMessage() => state = state.copyWith(clearMessage: true);
 

@@ -1,3 +1,5 @@
+import 'package:caloris/core/offline/sqlite_offline_store.dart';
+import 'package:caloris/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:caloris/features/food/data/supabase_food_repository.dart';
 import 'package:caloris/features/food/domain/food_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,6 +82,7 @@ class FoodDiaryController extends AsyncNotifier<List<FoodLog>> {
             );
       }
       state = AsyncData(await _load());
+      ref.invalidate(pendingFoodMutationsProvider);
       return previous.length;
     } on Object catch (error, stackTrace) {
       state = AsyncError(error, stackTrace);
@@ -110,6 +113,7 @@ class FoodDiaryController extends AsyncNotifier<List<FoodLog>> {
             );
       }
       state = AsyncData(await _load());
+      ref.invalidate(pendingFoodMutationsProvider);
       return true;
     } on Object catch (error, stackTrace) {
       state = AsyncError(error, stackTrace);
@@ -123,6 +127,7 @@ class FoodDiaryController extends AsyncNotifier<List<FoodLog>> {
       await operation();
       ref.invalidate(todayFoodLogsProvider);
       state = AsyncData(await _load());
+      ref.invalidate(pendingFoodMutationsProvider);
       return true;
     } on Object catch (error, stackTrace) {
       state = AsyncValue<List<FoodLog>>.error(error, stackTrace);
@@ -142,3 +147,12 @@ final favoriteMealsProvider = FutureProvider<List<FavoriteMeal>>(
 final todayFoodLogsProvider = FutureProvider<List<FoodLog>>(
   (ref) => ref.watch(foodRepositoryProvider).listForDay(DateTime.now()),
 );
+
+final pendingFoodMutationsProvider = FutureProvider<int>((ref) async {
+  final ownerId = ref.watch(authControllerProvider).session.userId;
+  if (ownerId == null) return 0;
+  final pending = await ref
+      .watch(offlineStoreProvider)
+      .pending(ownerId: ownerId, entity: 'food_logs', limit: 100);
+  return pending.length;
+});

@@ -1,5 +1,7 @@
 import 'package:caloris/core/config/app_environment.dart';
 import 'package:caloris/core/errors/app_failure.dart';
+import 'package:caloris/core/offline/offline_first_profile_repository.dart';
+import 'package:caloris/core/offline/sqlite_offline_store.dart';
 import 'package:caloris/features/profile/domain/profile_repository.dart';
 import 'package:caloris/features/profile/domain/user_profile.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +10,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   final environment = ref.watch(appEnvironmentProvider);
   if (!environment.isConfigured) return const UnavailableProfileRepository();
-  return SupabaseProfileRepository(Supabase.instance.client);
+  final client = Supabase.instance.client;
+  return OfflineFirstProfileRepository(
+    SupabaseProfileRepository(client),
+    ref.watch(offlineStoreProvider),
+    () => client.auth.currentUser?.id,
+  );
 });
 
 class SupabaseProfileRepository implements ProfileRepository {

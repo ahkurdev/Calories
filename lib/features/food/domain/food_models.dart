@@ -145,6 +145,12 @@ class FoodLog {
     'cooking_method': cookingMethod?.databaseValue,
     'logged_at': loggedAt.toUtc().toIso8601String(),
   };
+
+  Map<String, Object?> toCacheJson() => {
+    'id': id,
+    'user_id': userId,
+    ...toInsertJson(userId),
+  };
 }
 
 class DailyFoodSummary {

@@ -13,6 +13,7 @@ class FoodDiaryPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(selectedDiaryDateProvider);
     final diary = ref.watch(foodDiaryControllerProvider);
+    final pendingMutations = ref.watch(pendingFoodMutationsProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Diary makanan'),
@@ -31,7 +32,10 @@ class FoodDiaryPage extends ConsumerWidget {
         label: const Text('Tambah'),
       ),
       body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(foodDiaryControllerProvider),
+        onRefresh: () async {
+          ref.invalidate(foodDiaryControllerProvider);
+          ref.invalidate(pendingFoodMutationsProvider);
+        },
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           children: [
@@ -41,6 +45,19 @@ class FoodDiaryPage extends ConsumerWidget {
                   ?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
+            if (pendingMutations.value case final count? when count > 0) ...[
+              Card(
+                color: Theme.of(context).colorScheme.secondaryContainer,
+                child: ListTile(
+                  leading: const Icon(Icons.sync_outlined),
+                  title: Text('$count perubahan menunggu sinkronisasi'),
+                  subtitle: const Text(
+                    'Catatan tersimpan di perangkat dan akan dicoba lagi saat layanan tersedia.',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             Wrap(
               spacing: 8,
               runSpacing: 8,

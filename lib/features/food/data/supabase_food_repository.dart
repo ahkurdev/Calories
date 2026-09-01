@@ -1,5 +1,7 @@
 import 'package:caloris/core/config/app_environment.dart';
 import 'package:caloris/core/errors/app_failure.dart';
+import 'package:caloris/core/offline/offline_first_food_repository.dart';
+import 'package:caloris/core/offline/sqlite_offline_store.dart';
 import 'package:caloris/features/food/domain/food_models.dart';
 import 'package:caloris/features/food/domain/food_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +10,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 final foodRepositoryProvider = Provider<FoodRepository>((ref) {
   final environment = ref.watch(appEnvironmentProvider);
   if (!environment.isConfigured) return const UnavailableFoodRepository();
-  return SupabaseFoodRepository(Supabase.instance.client);
+  final client = Supabase.instance.client;
+  return OfflineFirstFoodRepository(
+    SupabaseFoodRepository(client),
+    ref.watch(offlineStoreProvider),
+    () => client.auth.currentUser?.id,
+  );
 });
 
 class SupabaseFoodRepository implements FoodRepository {
@@ -20,11 +27,12 @@ class SupabaseFoodRepository implements FoodRepository {
   Future<FoodLog> add(FoodLog food) async {
     final ownerId = _requireUserId();
     try {
-      final data = await _client
-          .from('food_logs')
-          .insert(food.toInsertJson(ownerId))
-          .select()
-          .single();
+      final payload = food.toInsertJson(ownerId);
+      if (food.id.isNotEmpty) payload['id'] = food.id;
+      final query = food.id.isEmpty
+          ? _client.from('food_logs').insert(payload)
+          : _client.from('food_logs').upsert(payload, onConflict: 'id');
+      final data = await query.select().single();
       return FoodLog.fromJson(data);
     } on PostgrestException catch (error) {
       throw DataFailure(_message(error));

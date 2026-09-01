@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:caloris/core/errors/app_failure.dart';
+import 'package:caloris/core/offline/offline_store.dart';
+import 'package:caloris/core/offline/sqlite_offline_store.dart';
 import 'package:caloris/features/auth/data/supabase_auth_repository.dart';
 import 'package:caloris/features/auth/domain/auth_repository.dart';
 import 'package:caloris/features/auth/presentation/controllers/auth_controller.dart';
@@ -49,20 +51,50 @@ void main() {
       'Email belum tepat.',
     );
   });
+
+  test('AuthController clears only the signed-out owner cache', () async {
+    final repository = _FakeAuthRepository(
+      initialSession: const AuthSessionState(
+        status: AuthStatus.authenticated,
+        userId: 'user-1',
+      ),
+    );
+    final store = _RecordingOfflineStore();
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(repository),
+        offlineStoreProvider.overrideWithValue(store),
+      ],
+    );
+    addTearDown(() async {
+      container.dispose();
+      await repository.dispose();
+    });
+
+    final success = await container
+        .read(authControllerProvider.notifier)
+        .signOut();
+
+    expect(success, isTrue);
+    expect(store.clearedOwners, ['user-1']);
+  });
 }
 
 class _FakeAuthRepository implements AuthRepository {
-  _FakeAuthRepository({this.signInFailure});
+  _FakeAuthRepository({
+    this.signInFailure,
+    this.initialSession = const AuthSessionState.unauthenticated(),
+  });
 
   final AuthenticationFailure? signInFailure;
+  final AuthSessionState initialSession;
   final _changes = StreamController<AuthSessionState>.broadcast();
   String? lastEmail;
 
   Future<void> dispose() => _changes.close();
 
   @override
-  AuthSessionState get currentSession =>
-      const AuthSessionState.unauthenticated();
+  AuthSessionState get currentSession => initialSession;
 
   @override
   Stream<AuthSessionState> get sessionChanges => _changes.stream;
@@ -87,4 +119,11 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<void> updatePassword(String password) async {}
+}
+
+class _RecordingOfflineStore extends Fake implements OfflineStore {
+  final List<String> clearedOwners = [];
+
+  @override
+  Future<void> clearOwner(String ownerId) async => clearedOwners.add(ownerId);
 }
