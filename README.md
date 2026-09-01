@@ -282,7 +282,7 @@ npx --yes deno check --config supabase/functions/generate-weekly-summary/deno.js
 npx --yes deno check --config supabase/functions/recommend-activity/deno.json supabase/functions/recommend-activity/index.ts
 ```
 
-The current gate includes 35 Flutter tests and 23 Deno tests. They cover
+The current gate includes 37 Flutter tests and 23 Deno tests. They cover
 configuration, calorie calculations, Auth, profile,
 food aggregation, progress, schedule validation, scan schema bounds, the visible
 estimate disclaimer, the explicit mock label, mobile function response parsing,

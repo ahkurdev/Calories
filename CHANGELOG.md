@@ -27,6 +27,11 @@
   hosted Auth enforces confirmed email, 8-character letter+digit passwords, and
   password-change reauthentication.
 
+### Fixed
+
+- Current Supabase `invalid_credentials` and `email_not_confirmed` responses now
+  show actionable Indonesian messages instead of the generic account fallback.
+
 ### Deployment notes
 
 - Live provider keys and allowlists are configured as Supabase Edge Function

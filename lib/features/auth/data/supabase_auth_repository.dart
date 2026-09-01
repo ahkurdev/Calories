@@ -1,5 +1,6 @@
 import 'package:caloris/core/config/app_environment.dart';
 import 'package:caloris/core/errors/app_failure.dart';
+import 'package:caloris/features/auth/data/auth_error_messages.dart';
 import 'package:caloris/features/auth/domain/auth_redirects.dart';
 import 'package:caloris/features/auth/domain/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,30 +82,12 @@ class SupabaseAuthRepository implements AuthRepository {
     try {
       await operation();
     } on AuthException catch (error) {
-      throw AuthenticationFailure(_friendlyAuthMessage(error));
+      throw AuthenticationFailure(friendlyAuthMessage(error));
     } on Exception {
       throw const AuthenticationFailure(
         'Tidak dapat terhubung ke layanan akun. Coba lagi.',
       );
     }
-  }
-
-  String _friendlyAuthMessage(AuthException error) {
-    final value = error.message.toLowerCase();
-    if (value.contains('invalid login')) {
-      return 'Email atau kata sandi belum tepat.';
-    }
-    if (value.contains('already registered') ||
-        value.contains('already exists')) {
-      return 'Email ini sudah terdaftar.';
-    }
-    if (value.contains('password')) {
-      return 'Kata sandi belum memenuhi persyaratan keamanan.';
-    }
-    if (value.contains('rate') || error.statusCode == '429') {
-      return 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.';
-    }
-    return 'Permintaan akun belum berhasil. Silakan coba lagi.';
   }
 }
 

@@ -78,7 +78,7 @@ Status: **Phase 7 implementation complete — 2026-09-01**
       pass with bounded 429/503 fallback behavior.
 - [x] Model starts rotate independently for text and vision while preserving an
       ordered three-model fallback window; Muse uses OpenCode Responses API.
-- [x] Final automated gate includes 35 Flutter tests and 23 Deno tests.
+- [x] Final automated gate includes 37 Flutter tests and 23 Deno tests.
 - [x] Authenticated Edge Function smoke test returns HTTP 200/success with a
       temporary confirmed user; its session is revoked and user is deleted.
 - [x] A private ignored upload keystore signs the Android App Bundle for the
