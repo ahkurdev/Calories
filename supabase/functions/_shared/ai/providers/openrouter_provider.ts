@@ -1,6 +1,8 @@
 import { AIError, toAIError } from "../errors.ts";
+import { rotatingModelWindow } from "../model_rotation.ts";
 import { OpenRouterModelService } from "../openrouter_model_service.ts";
 import type { AIProviderConfig } from "../provider_config.ts";
+import { AIResponseNormalizer } from "../response_normalizer.ts";
 import { buildMessages } from "../system_prompt.ts";
 import type { AIProvider, AIProviderResult, AIRequest } from "../types.ts";
 
@@ -30,8 +32,20 @@ export class OpenRouterAIProvider implements AIProvider {
       );
     }
     let lastError: AIError | undefined;
-    for (const model of models.slice(0, 3)) {
+    const selectedIds = rotatingModelWindow(
+      `openrouter:${request.visionRequired ? "vision" : "text"}`,
+      models.map((model) => model.id),
+      3,
+    );
+    const byId = new Map(models.map((model) => [model.id, model]));
+    for (const modelId of selectedIds) {
+      const model = byId.get(modelId)!;
       try {
+        const supportsJsonParameter = (model.supported_parameters ?? []).some(
+          (parameter) =>
+            parameter === "structured_outputs" ||
+            parameter === "response_format",
+        );
         const response = await this.fetcher(
           "https://openrouter.ai/api/v1/chat/completions",
           {
@@ -46,7 +60,9 @@ export class OpenRouterAIProvider implements AIProvider {
             body: JSON.stringify({
               model: model.id,
               messages: buildMessages(request),
-              response_format: { type: "json_object" },
+              ...(supportsJsonParameter
+                ? { response_format: { type: "json_object" } }
+                : {}),
               temperature: 0.2,
               max_tokens: 1800,
             }),
@@ -54,10 +70,13 @@ export class OpenRouterAIProvider implements AIProvider {
         );
         if (!response.ok) throw mapStatus(response.status, "OpenRouter");
         const content = parseOpenRouterResponse(await response.json());
+        AIResponseNormalizer.normalize(request.task, content);
         return { provider: this.name, model: model.id, content };
       } catch (error) {
         lastError = toAIError(error);
-        if (!lastError.retryable) throw lastError;
+        if (!lastError.retryable && lastError.code !== "invalid_response") {
+          throw lastError;
+        }
       }
     }
     throw lastError ??

@@ -12,6 +12,9 @@
 - Deterministic daily/weekly statistics plus optional scoped meal, activity, and
   summary insights.
 - Per-user SQLite profile/diary cache and an idempotent food mutation outbox.
+- Capability-aware rotating model pools with ordered fallback across the
+  configured OpenRouter and OpenCode Zen allowlists.
+- OpenCode Responses API support for Muse Spark 1.2 Contributor Free.
 
 ### Security
 
@@ -23,6 +26,7 @@
 
 ### Deployment notes
 
-- Live AI requires owner-supplied Supabase Edge Function secrets.
-- Android/iOS store signing, production Auth URLs, and store metadata remain
-  environment-specific release-owner responsibilities.
+- Live provider keys and allowlists are configured as Supabase Edge Function
+  secrets and remain outside Git and mobile artifacts.
+- Android store signing, production Auth URLs, and store metadata remain
+  environment-specific release-owner responsibilities; iOS is deferred.

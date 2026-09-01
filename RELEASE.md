@@ -1,18 +1,22 @@
-# Caloris 1.0 Release Runbook
+# Caloris 1.0 Android Release Runbook
+
+iOS distribution is intentionally deferred. The current release track and its
+required gates cover Android only; shared Flutter/iOS source remains preserved.
 
 ## External configuration required
 
 - Set `SUPABASE_URL` and a publishable/legacy anon key in the untracked `.env`.
-- Set at least one backend provider key with `supabase secrets set`; never put it
-  in Flutter, `.env`, or Git.
-- For OpenCode Zen, explicitly set `OPENCODE_ALLOWED_MODELS` and, for food scan,
-  `OPENCODE_VISION_MODELS`.
+- Confirm both backend provider keys remain configured using the Supabase secret
+  listing command; never put their values in Flutter, `.env`, or Git.
+- For OpenCode Zen, explicitly set `OPENCODE_ALLOWED_MODELS`. Set
+  `OPENCODE_VISION_MODELS` only after the catalog verifies image support; it is
+  currently omitted and Android food scan uses vision-capable OpenRouter models.
 - In hosted Supabase Auth, require email confirmation, minimum 8-character
   letter+digit passwords, secure password changes, and allow
   `caloris://reset-password`.
-- Confirm the permanent Android application ID and iOS bundle ID before the
-  first store upload; changing them later creates a different application.
-- Create private Android upload signing material and iOS distribution signing.
+- Confirm the permanent Android application ID before the first Play Store
+  upload; changing it later creates a different application.
+- Create private Android upload signing material.
 
 ## Android signing
 
@@ -41,8 +45,8 @@ supabase db advisors --linked --type performance --level warn --fail-on error
 ```
 
 Also verify all five functions are active with JWT verification, perform an
-authenticated smoke test with the configured provider, test offline add/sync on
-a physical device, and test camera/notification permissions on Android and iOS.
+authenticated function smoke test with a real test account, test offline
+add/sync on a physical Android device, and test camera/notification permissions.
 
 Current toolchain note: `flutter_timezone` still applies the legacy Kotlin
 Gradle plugin. The present debug build succeeds, but update the plugin when it

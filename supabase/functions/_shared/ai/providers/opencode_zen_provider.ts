@@ -1,7 +1,11 @@
 import { AIError } from "../errors.ts";
+import { rotatingModelWindow } from "../model_rotation.ts";
 import type { AIProviderConfig } from "../provider_config.ts";
+import { AIResponseNormalizer } from "../response_normalizer.ts";
 import { buildMessages } from "../system_prompt.ts";
 import type { AIProvider, AIProviderResult, AIRequest } from "../types.ts";
+
+const responsesModels = new Set(["muse-spark-1.2-contributor-free"]);
 
 export class OpenCodeZenAIProvider implements AIProvider {
   readonly name = "opencode_zen" as const;
@@ -28,10 +32,18 @@ export class OpenCodeZenAIProvider implements AIProvider {
       );
     }
     let lastError: AIError | undefined;
-    for (const model of compatible.slice(0, 3)) {
+    const selectedModels = rotatingModelWindow(
+      `opencode:${request.visionRequired ? "vision" : "text"}`,
+      compatible,
+      3,
+    );
+    for (const model of selectedModels) {
       try {
+        const responsesApi = responsesModels.has(model);
         const response = await this.fetcher(
-          "https://opencode.ai/zen/v1/chat/completions",
+          responsesApi
+            ? "https://opencode.ai/zen/v1/responses"
+            : "https://opencode.ai/zen/v1/chat/completions",
           {
             method: "POST",
             signal,
@@ -39,20 +51,26 @@ export class OpenCodeZenAIProvider implements AIProvider {
               Authorization: `Bearer ${this.apiKey}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              model,
-              messages: buildMessages(request),
-              response_format: { type: "json_object" },
-              temperature: 0.2,
-              max_tokens: 1800,
-            }),
+            body: JSON.stringify(
+              responsesApi ? buildResponsesRequest(model, request) : {
+                model,
+                messages: buildMessages(request),
+                response_format: { type: "json_object" },
+                temperature: 0.2,
+                max_tokens: 1800,
+              },
+            ),
           },
         );
         if (!response.ok) throw mapStatus(response.status);
+        const content = responsesApi
+          ? parseOpenCodeResponsesResponse(await response.json())
+          : parseOpenCodeResponse(await response.json());
+        AIResponseNormalizer.normalize(request.task, content);
         return {
           provider: this.name,
           model,
-          content: parseOpenCodeResponse(await response.json()),
+          content,
         };
       } catch (error) {
         lastError = error instanceof AIError
@@ -60,7 +78,9 @@ export class OpenCodeZenAIProvider implements AIProvider {
           : error instanceof DOMException && error.name === "AbortError"
           ? new AIError("timeout", "OpenCode Zen timed out.", true)
           : new AIError("network_error", "OpenCode Zen network failed.", true);
-        if (!lastError.retryable) throw lastError;
+        if (!lastError.retryable && lastError.code !== "invalid_response") {
+          throw lastError;
+        }
       }
     }
     throw lastError ??
@@ -96,6 +116,23 @@ export class OpenCodeZenAIProvider implements AIProvider {
   }
 }
 
+function buildResponsesRequest(model: string, request: AIRequest) {
+  const messages = buildMessages(request);
+  const instructions = messages.find((message) => message.role === "system")
+    ?.content;
+  const input = messages.filter((message) => message.role !== "system").map(
+    (message) => ({ role: message.role, content: message.content }),
+  );
+  return {
+    model,
+    instructions,
+    input,
+    text: { format: { type: "json_object" } },
+    temperature: 0.2,
+    max_output_tokens: 1800,
+  };
+}
+
 export function parseOpenCodeResponse(payload: unknown): string {
   if (!isRecord(payload) || !Array.isArray(payload.choices)) invalid();
   const first = payload.choices[0];
@@ -105,6 +142,25 @@ export function parseOpenCodeResponse(payload: unknown): string {
   ) invalid();
   if (first.message.content.length > 32_768) invalid();
   return first.message.content;
+}
+
+export function parseOpenCodeResponsesResponse(payload: unknown): string {
+  if (!isRecord(payload)) invalid();
+  if (typeof payload.output_text === "string") {
+    if (payload.output_text.length > 32_768) invalid();
+    return payload.output_text;
+  }
+  if (!Array.isArray(payload.output)) invalid();
+  const text = payload.output.flatMap((item) => {
+    if (!isRecord(item) || !Array.isArray(item.content)) return [];
+    return item.content.flatMap((content) =>
+      isRecord(content) && typeof content.text === "string"
+        ? [content.text]
+        : []
+    );
+  }).join("");
+  if (text.length < 1 || text.length > 32_768) invalid();
+  return text;
 }
 
 function mapStatus(status: number): AIError {

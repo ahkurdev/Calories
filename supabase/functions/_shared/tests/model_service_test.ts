@@ -42,3 +42,24 @@ Deno.test("OpenRouter allowlist narrows dynamic free catalog", () => {
     throw new Error("Allowlist was not applied");
   }
 });
+
+Deno.test("OpenRouter preserves explicit allowlist order and permits prompt-only JSON", () => {
+  const service = new OpenRouterModelService(() => Promise.resolve(catalog));
+  const promptOnly = {
+    id: "free/prompt-only",
+    architecture: { input_modalities: ["text"] },
+    pricing: { prompt: "0", completion: "0", request: "0", image: "0" },
+    supported_parameters: ["temperature"],
+  };
+  const models = service.selectFromCatalog([...catalog, promptOnly], {
+    visionRequired: false,
+    allowedModels: ["free/prompt-only", "free/text"],
+  });
+  if (
+    models.map((model) => model.id).join(",") !== "free/prompt-only,free/text"
+  ) {
+    throw new Error(
+      `Allowlist order was not preserved: ${JSON.stringify(models)}`,
+    );
+  }
+});

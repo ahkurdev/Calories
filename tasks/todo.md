@@ -73,11 +73,16 @@ Status: **Phase 7 implementation complete — 2026-09-01**
       release/rollback runbook are included.
 - [x] Version 1.0.0 candidate changelog and external production configuration
       checklist are documented.
-- [x] Final automated gate includes 34 Flutter tests and 18 Deno tests.
-- [ ] Authenticated live-provider smoke test requires an owner-supplied provider
-      key and test account.
-- [ ] Signed Android App Bundle and iOS archive require owner-controlled signing
-      identities and final permanent bundle IDs.
+- [x] OpenRouter and OpenCode keys plus exact model allowlists are stored as
+      server-only Supabase secrets; direct provider credential/model smoke tests
+      pass with bounded 429/503 fallback behavior.
+- [x] Model starts rotate independently for text and vision while preserving an
+      ordered three-model fallback window; Muse uses OpenCode Responses API.
+- [x] Final automated gate includes 34 Flutter tests and 23 Deno tests.
+- [ ] Authenticated Edge Function smoke test requires a real Caloris test account.
+- [ ] Signed Android App Bundle requires the owner-controlled upload keystore and
+      confirmation of the permanent application ID.
+- [ ] iOS release work is explicitly deferred until after Android.
 
 ## Task 1: Bootstrap Flutter foundation
 

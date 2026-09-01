@@ -39,7 +39,7 @@ export class OpenRouterModelService {
     options: SelectionOptions,
   ): OpenRouterModel[] {
     const allowed = new Set(options.allowedModels);
-    return catalog.filter((model) => {
+    const compatible = catalog.filter((model) => {
       if (!model.id || (allowed.size > 0 && !allowed.has(model.id))) {
         return false;
       }
@@ -48,10 +48,18 @@ export class OpenRouterModelService {
         options.visionRequired &&
         !model.architecture?.input_modalities?.includes("image")
       ) return false;
-      const parameters = model.supported_parameters ?? [];
-      return parameters.includes("structured_outputs") ||
-        parameters.includes("response_format");
-    }).sort((a, b) => (b.context_length ?? 0) - (a.context_length ?? 0));
+      return true;
+    });
+    if (options.allowedModels.length > 0) {
+      const byId = new Map(compatible.map((model) => [model.id, model]));
+      return options.allowedModels.flatMap((id) => {
+        const model = byId.get(id);
+        return model ? [model] : [];
+      });
+    }
+    return compatible.sort((a, b) =>
+      (b.context_length ?? 0) - (a.context_length ?? 0)
+    );
   }
 }
 

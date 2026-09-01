@@ -189,29 +189,39 @@ supabase secrets set OPENCODE_API_KEY=YOUR_KEY
 ```
 
 Do not commit these values, return them from an Edge Function, or place them in
-Flutter. OpenRouter dynamically queries its catalog and accepts only compatible
-models with zero prompt/completion pricing; `OPENROUTER_ALLOWED_MODELS` can
-further narrow that set. OpenCode Zen remains disabled until
-`OPENCODE_ALLOWED_MODELS` explicitly lists compatible chat-completion model IDs.
-Vision-capable Zen IDs must also appear in `OPENCODE_VISION_MODELS` before they
-can receive food photos.
+Flutter. OpenRouter dynamically queries its catalog, enforces zero
+prompt/completion pricing, and is narrowed to the production allowlist below.
+OpenCode Zen remains disabled until `OPENCODE_ALLOWED_MODELS` explicitly lists
+compatible model IDs. Vision-capable Zen IDs must also appear in
+`OPENCODE_VISION_MODELS` before they can receive food photos.
 
 Optional server-only configuration:
 
 ```text
 OPENROUTER_ENABLED=true
 OPENROUTER_PRIORITY=1
-OPENROUTER_ALLOWED_MODELS=model-a,model-b
+OPENROUTER_ALLOWED_MODELS=z-ai/glm-5.2:free,minimax/minimax-m3:free,nvidia/nemotron-3-super-120b-a12b:free,poolside/laguna-s-2.1:free,dots-studio/dots-3-note-preview:free
 OPENCODE_ENABLED=true
 OPENCODE_PRIORITY=2
-OPENCODE_ALLOWED_MODELS=model-c
-OPENCODE_VISION_MODELS=model-c
+OPENCODE_ALLOWED_MODELS=big-pickle,mimo-v2.5-free,laguna-s-2.1-free,ling-3.0-flash-fin-free,muse-spark-1.2-contributor-free,nemotron-3.5-lightning-free
 AI_TIMEOUT_MS=20000
 AI_MAX_RETRIES=1
 AI_CIRCUIT_FAILURE_THRESHOLD=3
 AI_CIRCUIT_COOLDOWN_MS=60000
 AI_RATE_LIMIT_PER_MINUTE=12
 ```
+
+Within each provider, Caloris rotates the first model between requests and keeps
+up to two following models as ordered fallbacks. Text and vision rotations are
+independent. OpenRouter capability metadata selects image-capable models for food
+scan; unsupported optional parameters are omitted per model. Muse Spark uses the
+OpenCode Responses endpoint while the other configured Zen models use Chat
+Completions. Every returned payload still passes the same strict Caloris output
+normalizer before reaching Flutter.
+
+This bounded rotation design adapts the ordered fallback, round-robin, and
+capability-aware ideas from [9router](https://github.com/decolua/9router) without
+adding its general proxy, arbitrary model input, or tool-routing surface.
 
 Deploy all functions through the Supabase API without Docker:
 
@@ -271,14 +281,15 @@ npx --yes deno check --config supabase/functions/generate-weekly-summary/deno.js
 npx --yes deno check --config supabase/functions/recommend-activity/deno.json supabase/functions/recommend-activity/index.ts
 ```
 
-The current gate includes 34 Flutter tests and 18 Deno tests. They cover
+The current gate includes 34 Flutter tests and 23 Deno tests. They cover
 configuration, calorie calculations, Auth, profile,
 food aggregation, progress, schedule validation, scan schema bounds, the visible
 estimate disclaimer, the explicit mock label, mobile function response parsing,
 AI scope enforcement, free-model filtering, provider fallback, timeouts, circuit
 breaking, per-user rate limiting, response normalization, prompt-injection
-rejection, image media-signature validation, deterministic statistics, minimized
-recommendation payloads, and offline cache/outbox behavior.
+rejection, image media-signature validation, capability-aware model rotation,
+OpenCode Responses routing, deterministic statistics, minimized recommendation
+payloads, and offline cache/outbox behavior.
 
 Remote database verification without Docker:
 
