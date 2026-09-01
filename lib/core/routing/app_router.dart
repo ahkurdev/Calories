@@ -16,6 +16,7 @@ import 'package:caloris/features/onboarding/presentation/pages/onboarding_page.d
 import 'package:caloris/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:caloris/features/profile/presentation/pages/profile_page.dart';
 import 'package:caloris/features/progress/presentation/pages/progress_page.dart';
+import 'package:caloris/features/recommendations/presentation/pages/insights_page.dart';
 import 'package:caloris/features/schedule/presentation/pages/schedule_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,6 +96,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/favorites', builder: (_, _) => const FavoriteMealsPage()),
       GoRoute(path: '/progress', builder: (_, _) => const ProgressPage()),
+      GoRoute(path: '/insights', builder: (_, _) => const InsightsPage()),
       GoRoute(path: '/schedule', builder: (_, _) => const SchedulePage()),
       GoRoute(path: '/profile', builder: (_, _) => const ProfilePage()),
     ],

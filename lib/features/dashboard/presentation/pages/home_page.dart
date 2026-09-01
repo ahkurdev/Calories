@@ -192,6 +192,12 @@ class HomePage extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
+              onPressed: () => context.push('/insights'),
+              icon: const Icon(Icons.auto_awesome_outlined),
+              label: const Text('Insight & Rekomendasi'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
               onPressed: () =>
                   ref.read(authControllerProvider.notifier).signOut(),
               icon: const Icon(Icons.logout_rounded),
