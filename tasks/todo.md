@@ -1,6 +1,6 @@
 # Caloris Task List
 
-Status: **Phase 3 complete — 2026-09-01**
+Status: **Phase 5 complete — 2026-09-01**
 
 ## Phase 2: Daily calorie and food loop
 
@@ -28,6 +28,25 @@ Status: **Phase 3 complete — 2026-09-01**
 - [x] Corrected structured results are stored in scan history through a repository.
 - [x] Bottom navigation now exposes the requested Home, Diary, Scan, Progress, and Profile destinations.
 - [x] `flutter analyze`, 24 tests, and Android debug APK build pass.
+
+## Phase 5: Secured dual-provider AI backend
+
+- [x] Five feature-specific Edge Functions accept only exact Caloris task types.
+- [x] Generated Supabase auth wrappers and gateway configuration require JWTs.
+- [x] OpenRouter discovers compatible zero-cost models dynamically and can be
+      narrowed with a server allowlist.
+- [x] OpenCode Zen is disabled unless a server key and explicit model allowlist
+      are configured; vision models require a second explicit allowlist.
+- [x] Provider retries, timeout, priority fallback, and circuit breaking are
+      bounded and end in an honest manual-input response.
+- [x] Scope, schema, prompt-injection, executable-output, and size validation run
+      before or after provider dispatch as appropriate.
+- [x] Flutter calls `analyze-food` only when Supabase is configured; development
+      mock mode remains explicit, labelled, and disabled by default.
+- [x] All five functions are deployed with `verify_jwt = true`; an unauthenticated
+      live request is rejected with HTTP 401.
+- [x] `flutter analyze`, 25 Flutter tests, 13 Deno tests, Edge Function type-check,
+      remote advisors, and Android debug APK build pass.
 
 ## Task 1: Bootstrap Flutter foundation
 

@@ -1,13 +1,17 @@
 import 'package:caloris/core/config/app_environment.dart';
 import 'package:caloris/features/food_scan/domain/food_recognition_service.dart';
 import 'package:caloris/features/food_scan/domain/food_scan_models.dart';
+import 'package:caloris/features/food_scan/services/supabase_food_recognition_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final foodRecognitionServiceProvider = Provider<FoodRecognitionService>((ref) {
   final environment = ref.watch(appEnvironmentProvider);
-  return environment.useMockAi
-      ? const MockFoodRecognitionService()
-      : const UnavailableFoodRecognitionService();
+  if (environment.useMockAi) return const MockFoodRecognitionService();
+  if (environment.isConfigured) {
+    return SupabaseFoodRecognitionService(Supabase.instance.client);
+  }
+  return const UnavailableFoodRecognitionService();
 });
 
 class MockFoodRecognitionService implements FoodRecognitionService {

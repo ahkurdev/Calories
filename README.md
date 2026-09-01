@@ -9,7 +9,7 @@ never a general chatbot or coding/file assistant.
 
 ## Current status
 
-Phases 1–4 are implemented:
+Phases 1–5 are implemented:
 
 - Android/iOS Flutter project and feature-first architecture
 - Material 3 light/dark themes
@@ -26,9 +26,18 @@ Phases 1–4 are implemented:
 - food-only camera/gallery flow, preview, editable estimates, confirmation,
   private optional photo retention, and scan history
 - explicit development mock mode that is visibly labelled and disabled by default
+- authenticated, feature-specific Supabase Edge Functions for food analysis,
+  meal/activity recommendations, and daily/weekly summaries
+- dual-provider routing with dynamic OpenRouter free-model selection, an explicit
+  OpenCode Zen allowlist, bounded retry/timeout, circuit breaking, and safe
+  manual fallback
+- strict task/input/output validation, prompt-injection rejection, and no
+  provider secret exposure to Flutter
 
-Phase 5 AI backend work is tracked in [`tasks/plan.md`](tasks/plan.md). Until it
-is configured, production mode gives an honest manual-input fallback.
+All five Phase 5 functions are deployed to the linked Supabase project with JWT
+verification enabled. Provider keys are intentionally not committed. Until at
+least one provider is configured through Edge Function secrets, authenticated
+requests return an honest manual-input fallback.
 
 ## Requirements
 
@@ -148,12 +157,19 @@ button. It can be enabled later when those credentials are available.
 
 ## AI and Edge Functions
 
-Dual-provider AI is planned for Phase 5 and is not presented as active now. The
-backend will use feature-specific Edge Functions such as `analyze-food` and
-`recommend-meal`; there will be no `ask-ai` or general chat endpoint.
+Phase 5 exposes only these authenticated, feature-specific functions:
 
-When those functions are implemented, store provider keys only as Edge Function
-secrets:
+- `analyze-food` (`food_scan`)
+- `recommend-meal` (`food_recommendation`)
+- `generate-daily-summary` (`daily_summary`)
+- `generate-weekly-summary` (`weekly_summary`)
+- `recommend-activity` (`schedule_recommendation`)
+
+There is no `ask-ai`, free prompt, general chat, tool execution, filesystem
+access, or direct database mutation. Flutter sends typed feature data and treats
+every result as an editable preview.
+
+Store provider keys only as Edge Function secrets:
 
 ```bash
 supabase secrets set OPENROUTER_API_KEY=YOUR_KEY
@@ -161,8 +177,39 @@ supabase secrets set OPENCODE_API_KEY=YOUR_KEY
 ```
 
 Do not commit these values, return them from an Edge Function, or place them in
-Flutter. OpenRouter will be free-model-only by default, and OpenCode Zen will use
-only a server-side model allowlist.
+Flutter. OpenRouter dynamically queries its catalog and accepts only compatible
+models with zero prompt/completion pricing; `OPENROUTER_ALLOWED_MODELS` can
+further narrow that set. OpenCode Zen remains disabled until
+`OPENCODE_ALLOWED_MODELS` explicitly lists compatible chat-completion model IDs.
+Vision-capable Zen IDs must also appear in `OPENCODE_VISION_MODELS` before they
+can receive food photos.
+
+Optional server-only configuration:
+
+```text
+OPENROUTER_ENABLED=true
+OPENROUTER_PRIORITY=1
+OPENROUTER_ALLOWED_MODELS=model-a,model-b
+OPENCODE_ENABLED=true
+OPENCODE_PRIORITY=2
+OPENCODE_ALLOWED_MODELS=model-c
+OPENCODE_VISION_MODELS=model-c
+AI_TIMEOUT_MS=20000
+AI_MAX_RETRIES=1
+AI_CIRCUIT_FAILURE_THRESHOLD=3
+AI_CIRCUIT_COOLDOWN_MS=60000
+```
+
+Deploy all functions through the Supabase API without Docker:
+
+```bash
+supabase functions deploy analyze-food recommend-meal generate-daily-summary generate-weekly-summary recommend-activity --use-api --project-ref YOUR_PROJECT_REF --jobs 2
+supabase functions list --project-ref YOUR_PROJECT_REF
+```
+
+The gateway and generated function wrappers both require an authenticated user.
+Missing keys, provider failures, rate limits, invalid responses, and exhausted
+fallbacks return a bounded manual-input response instead of fabricated food data.
 
 ## Camera permissions and development mock
 
@@ -193,11 +240,16 @@ for production builds.
 ```bash
 flutter analyze
 flutter test
+npx --yes deno fmt --check supabase/functions
+npx --yes deno test --allow-env supabase/functions/_shared/tests
+npx --yes deno check --config supabase/functions/analyze-food/deno.json supabase/functions/analyze-food/index.ts supabase/functions/recommend-meal/index.ts supabase/functions/generate-daily-summary/index.ts supabase/functions/generate-weekly-summary/index.ts supabase/functions/recommend-activity/index.ts
 ```
 
 The current tests cover configuration, calorie calculations, Auth, profile,
 food aggregation, progress, schedule validation, scan schema bounds, the visible
-estimate disclaimer, and the explicit mock label.
+estimate disclaimer, the explicit mock label, mobile function response parsing,
+AI scope enforcement, free-model filtering, provider fallback, timeouts, circuit
+breaking, response normalization, and prompt-injection rejection.
 
 Remote database verification without Docker:
 

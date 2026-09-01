@@ -306,6 +306,8 @@ features are implemented. All versions are resolved and pinned in
   breaker, timeouts, and error mapping.
 - Gate: parser, fallback, scope, prompt-injection, malformed-response, and secret
   exposure tests pass.
+- Status: complete and deployed on 2026-09-01. All five functions require JWTs;
+  provider secrets remain an external deployment configuration.
 
 ### Phase 6 — Recommendations and summaries
 
@@ -340,7 +342,7 @@ features are implemented. All versions are resolved and pinned in
 | Mobile deep links vary by bundle/platform | Password reset callback can fail | Register a single documented `caloris://reset-password` callback in Supabase, Android, and iOS. |
 | Health inputs can be unrealistic | Invalid calorie targets and poor UX | Shared client validation plus database constraints; moderate deficit only. |
 | AI model catalogs/costs change | Paid use or failed scans | Server-side refreshed catalog, zero-cost checks, allowlists, bounded fallback, and manual mode. |
-| No local Docker runtime | Database/RLS tests cannot execute locally | Keep migration SQL reviewable; document `supabase start`, `db reset`, and `test db`; report the exact verification boundary. |
+| Docker is intentionally not used on this host | Local Supabase integration tests are unavailable | Use versioned migrations, linked-project advisors, API-based function deploys, live JWT rejection checks, and report the exact verification boundary. |
 
 ## Open Configuration (not product ambiguity)
 
@@ -349,4 +351,6 @@ features are implemented. All versions are resolved and pinned in
 - Google OAuth remains off until the user configures the provider, SHA keys,
   iOS URL scheme, and callback URLs.
 - Android/iOS release signing identities are supplied during release preparation.
-
+- OpenRouter/OpenCode provider keys and the explicit OpenCode model allowlists are
+  supplied through Supabase secrets; without them, AI endpoints safely request
+  manual input.
