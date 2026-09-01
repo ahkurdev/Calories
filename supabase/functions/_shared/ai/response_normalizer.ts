@@ -38,7 +38,7 @@ export class AIResponseNormalizer {
     ) {
       validateFoodResult(parsed);
     } else {
-      validateTextResult(parsed);
+      validateTextResult(task, parsed);
     }
     return parsed;
   }
@@ -50,6 +50,13 @@ function stripFence(value: string): string {
 }
 
 function validateFoodResult(value: Record<string, unknown>) {
+  exactKeys(value, [
+    "status",
+    "foods",
+    "total_estimated_calories",
+    "confidence",
+    "notes",
+  ]);
   const allowedStatus = ["success", "not_food", "out_of_scope"];
   if (!allowedStatus.includes(String(value.status))) invalid("Invalid status.");
   if (!Array.isArray(value.foods) || value.foods.length > 30) {
@@ -57,6 +64,14 @@ function validateFoodResult(value: Record<string, unknown>) {
   }
   for (const rawFood of value.foods) {
     if (!isPlainObject(rawFood)) invalid("Invalid food item.");
+    exactKeys(rawFood, [
+      "name",
+      "estimated_grams",
+      "estimated_calories",
+      "confidence",
+      "unit",
+      "cooking_method",
+    ]);
     const name = rawFood.name;
     const grams = rawFood.estimated_grams;
     const calories = rawFood.estimated_calories;
@@ -72,6 +87,13 @@ function validateFoodResult(value: Record<string, unknown>) {
       invalid("Invalid food estimate.");
     }
     if (!boundedNumber(confidence, 0, 1)) invalid("Invalid confidence.");
+    if (rawFood.unit !== undefined && typeof rawFood.unit !== "string") {
+      invalid("Invalid food unit.");
+    }
+    if (
+      rawFood.cooking_method !== undefined &&
+      typeof rawFood.cooking_method !== "string"
+    ) invalid("Invalid cooking method.");
   }
   if (!boundedNumber(value.total_estimated_calories, 0, 10_000)) {
     invalid("Invalid total calories.");
@@ -79,20 +101,48 @@ function validateFoodResult(value: Record<string, unknown>) {
   if (typeof value.notes !== "string" || value.notes.length > 1_000) {
     invalid("Invalid notes.");
   }
+  if (
+    value.confidence !== undefined && !boundedNumber(value.confidence, 0, 1)
+  ) {
+    invalid("Invalid overall confidence.");
+  }
   if (value.status === "not_food" && value.foods.length !== 0) {
     invalid("Not-food response cannot contain foods.");
   }
 }
 
-function validateTextResult(value: Record<string, unknown>) {
+function validateTextResult(
+  task: AITaskType,
+  value: Record<string, unknown>,
+) {
   if (!["success", "out_of_scope"].includes(String(value.status))) {
     invalid("Invalid status.");
   }
-  const content = value.message ?? value.summary ?? value.recommendation;
+  if (value.status === "out_of_scope") {
+    exactKeys(value, ["status", "message"]);
+    validateText(value.message);
+    return;
+  }
+  const contentKey = task === AITaskType.dailySummary ||
+      task === AITaskType.weeklySummary
+    ? "summary"
+    : "recommendation";
+  exactKeys(value, ["status", contentKey]);
+  validateText(value[contentKey]);
+}
+
+function validateText(content: unknown) {
   if (
     typeof content !== "string" || content.length < 1 || content.length > 4_000
   ) {
     invalid("Invalid text result.");
+  }
+}
+
+function exactKeys(value: Record<string, unknown>, allowed: string[]) {
+  const allowedSet = new Set(allowed);
+  if (Object.keys(value).some((key) => !allowedSet.has(key))) {
+    invalid("Unexpected response field.");
   }
 }
 

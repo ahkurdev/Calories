@@ -8,7 +8,21 @@ Deno.test("handler returns honest manual fallback when providers are not configu
     new Request("https://example.test/generate-daily-summary", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input: { stats: { calories: 1800 } } }),
+      body: JSON.stringify({
+        input: {
+          stats: {
+            date: "2026-09-01",
+            targetCalories: 1900,
+            consumedCalories: 1800,
+            remainingCalories: 100,
+            overTargetCalories: 0,
+            waterMl: 2000,
+            waterTargetMl: 2000,
+            activityMinutes: 20,
+            estimatedActivityCalories: 80,
+          },
+        },
+      }),
     }),
     AITaskType.dailySummary,
   );

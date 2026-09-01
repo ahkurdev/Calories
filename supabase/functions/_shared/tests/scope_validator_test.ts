@@ -38,8 +38,60 @@ Deno.test("scope validator rejects coding and prompt injection content", () => {
       () =>
         AIScopeValidator.validate(AITaskType.foodRecommendation, {
           remainingCalories: 500,
+          goal: "maintain_weight",
+          mealType: "dinner",
           preference: attack,
+          foodHistory: [],
+          practicalMode: false,
         }),
+      "out_of_scope",
+    );
+  }
+});
+
+Deno.test("scope validator accepts minimized recommendation inputs", () => {
+  AIScopeValidator.validate(AITaskType.foodRecommendation, {
+    remainingCalories: 550,
+    goal: "lose_weight",
+    mealType: "dinner",
+    preference: "tanpa santan",
+    foodHistory: [{ name: "Nasi", calories: 200, mealType: "lunch" }],
+    practicalMode: true,
+  });
+  AIScopeValidator.validate(AITaskType.scheduleRecommendation, {
+    dayOfWeek: 2,
+    schedules: [{
+      activityName: "Kerja",
+      dayOfWeek: 2,
+      startTime: "08:00",
+      endTime: "17:00",
+      category: "work",
+      busynessLevel: 3,
+    }],
+  });
+});
+
+Deno.test("scope validator rejects invalid nested recommendation data", () => {
+  for (
+    const input of [
+      {
+        remainingCalories: 500,
+        goal: "extreme_loss",
+        mealType: "dinner",
+        foodHistory: [],
+        practicalMode: false,
+      },
+      {
+        remainingCalories: 500,
+        goal: "maintain_weight",
+        mealType: "dinner",
+        foodHistory: [{ name: "Nasi", calories: 200, userId: "private" }],
+        practicalMode: false,
+      },
+    ]
+  ) {
+    assertThrows(
+      () => AIScopeValidator.validate(AITaskType.foodRecommendation, input),
       "out_of_scope",
     );
   }

@@ -34,3 +34,23 @@ Deno.test("normalizer rejects malformed, executable, and out-of-range output", (
     );
   }
 });
+
+Deno.test("normalizer enforces the exact text contract for each task", () => {
+  const result = AIResponseNormalizer.normalize(
+    AITaskType.dailySummary,
+    '{"status":"success","summary":"Catatan hari ini cukup dekat dengan target."}',
+  );
+  if (result.status !== "success") throw new Error("Unexpected status");
+
+  for (
+    const payload of [
+      '{"status":"success","recommendation":"wrong key"}',
+      '{"status":"success","summary":"valid","source_code":"no"}',
+    ]
+  ) {
+    assertThrows(
+      () => AIResponseNormalizer.normalize(AITaskType.dailySummary, payload),
+      "invalid_response",
+    );
+  }
+});
