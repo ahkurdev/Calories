@@ -59,6 +59,14 @@ class SqliteOfflineStore implements OfflineStore {
       'payload': payload,
       'updated_at': DateTime.now().millisecondsSinceEpoch,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+    final cutoff = DateTime.now()
+        .subtract(const Duration(days: 90))
+        .millisecondsSinceEpoch;
+    await (await _db).delete(
+      'cache_entries',
+      where: 'cache_key like ? and updated_at < ?',
+      whereArgs: ['food-day:%', cutoff],
+    );
   }
 
   @override
@@ -121,7 +129,7 @@ class SqliteOfflineStore implements OfflineStore {
   }) async {
     final rows = await (await _db).query(
       'mutation_outbox',
-      where: 'owner_id = ? and entity = ? and attempts < 5',
+      where: 'owner_id = ? and entity = ?',
       whereArgs: [ownerId, entity],
       orderBy: 'created_at',
       limit: limit.clamp(1, 100),
