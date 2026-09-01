@@ -11,12 +11,13 @@ required gates cover Android only; shared Flutter/iOS source remains preserved.
 - For OpenCode Zen, explicitly set `OPENCODE_ALLOWED_MODELS`. Set
   `OPENCODE_VISION_MODELS` only after the catalog verifies image support; it is
   currently omitted and Android food scan uses vision-capable OpenRouter models.
-- In hosted Supabase Auth, require email confirmation, minimum 8-character
-  letter+digit passwords, secure password changes, and allow
-  `caloris://reset-password`.
-- Confirm the permanent Android application ID before the first Play Store
-  upload; changing it later creates a different application.
-- Create private Android upload signing material.
+- Hosted Supabase Auth is configured to require email confirmation, minimum
+  8-character letter+digit passwords, secure password changes, and allow both
+  `caloris://auth-callback` and `caloris://reset-password`.
+- The Android application ID is fixed as `com.caloris.caloris`; changing it later
+  creates a different Play Store application.
+- Private Android upload signing material exists locally and remains ignored by
+  Git. Back up both the keystore and `android/key.properties` securely.
 
 ## Android signing
 
@@ -32,6 +33,10 @@ flutter build appbundle --release --dart-define-from-file=.env
 
 Release builds intentionally fail if `android/key.properties` is absent.
 
+The 2026-09-01 release checkpoint produced and verified the signed bundle at
+`build/app/outputs/bundle/release/app-release.aab`. Build output is intentionally
+not committed; reproduce it from the same protected upload key before upload.
+
 ## Pre-launch gate
 
 ```bash
@@ -44,9 +49,11 @@ supabase db advisors --linked --type security --level warn --fail-on error
 supabase db advisors --linked --type performance --level warn --fail-on error
 ```
 
-Also verify all five functions are active with JWT verification, perform an
-authenticated function smoke test with a real test account, test offline
-add/sync on a physical Android device, and test camera/notification permissions.
+All five functions are active with JWT verification. An authenticated daily
+summary smoke test returned HTTP 200 with a success envelope, then revoked its
+temporary session and deleted its temporary user. Before store rollout, still
+test offline add/sync on a physical Android device and camera/notification
+permissions.
 
 Current toolchain note: `flutter_timezone` still applies the legacy Kotlin
 Gradle plugin. The present debug build succeeds, but update the plugin when it

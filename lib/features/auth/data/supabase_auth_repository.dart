@@ -1,5 +1,6 @@
 import 'package:caloris/core/config/app_environment.dart';
 import 'package:caloris/core/errors/app_failure.dart';
+import 'package:caloris/features/auth/domain/auth_redirects.dart';
 import 'package:caloris/features/auth/domain/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -44,14 +45,18 @@ class SupabaseAuthRepository implements AuthRepository {
   @override
   Future<void> register({required String email, required String password}) =>
       _guard(() async {
-        await _client.auth.signUp(email: email.trim(), password: password);
+        await _client.auth.signUp(
+          email: email.trim(),
+          password: password,
+          emailRedirectTo: AuthRedirects.emailConfirmation,
+        );
       });
 
   @override
   Future<void> requestPasswordReset(String email) => _guard(() async {
     await _client.auth.resetPasswordForEmail(
       email.trim(),
-      redirectTo: 'caloris://reset-password',
+      redirectTo: AuthRedirects.passwordRecovery,
     );
   });
 

@@ -324,9 +324,10 @@ features are implemented. All versions are resolved and pinned in
   and release checks for Android/iOS.
 - Gate: full analyze/test/build, RLS multi-user verification, and final master
   requirement checklist pass.
-- Status: implementation complete on 2026-09-01. Unsigned platform artifacts,
-  hosted Auth production values, and live provider smoke tests remain explicit
-  owner-controlled release gates.
+- Status: Android release checkpoint complete on 2026-09-01. Hosted Auth values,
+  live provider/JWT smoke tests, private upload signing, and a verified signed AAB
+  are complete; physical-device/store checks remain external rollout gates. iOS
+  is intentionally deferred.
 
 ## Architecture Decisions
 
@@ -344,7 +345,7 @@ features are implemented. All versions are resolved and pinned in
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
 | Supabase Data API default exposure changed in 2026 | Client tables may return permission errors | Migration explicitly revokes and grants required operations; README calls out Data API exposure settings. |
-| Mobile deep links vary by bundle/platform | Password reset callback can fail | Register a single documented `caloris://reset-password` callback in Supabase, Android, and iOS. |
+| Mobile deep links vary by bundle/platform | Confirmation or password recovery callback can fail | Register the documented `caloris://auth-callback` and `caloris://reset-password` callbacks in hosted Auth and Android. |
 | Health inputs can be unrealistic | Invalid calorie targets and poor UX | Shared client validation plus database constraints; moderate deficit only. |
 | AI model catalogs/costs change | Paid use or failed scans | Server-side refreshed catalog, zero-cost checks, allowlists, bounded fallback, and manual mode. |
 | Docker is intentionally not used on this host | Local Supabase integration tests are unavailable | Use versioned migrations, linked-project advisors, API-based function deploys, live JWT rejection checks, and report the exact verification boundary. |
@@ -355,7 +356,8 @@ features are implemented. All versions are resolved and pinned in
   connected flows.
 - Google OAuth remains off until the user configures the provider, SHA keys,
   iOS URL scheme, and callback URLs.
-- Android/iOS release signing identities are supplied during release preparation.
+- Android upload signing is configured privately on the release workstation;
+  iOS signing remains deferred.
 - OpenRouter/OpenCode provider keys and the explicit OpenCode model allowlists are
   supplied through Supabase secrets; without them, AI endpoints safely request
   manual input.

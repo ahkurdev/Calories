@@ -23,10 +23,14 @@
   user data autonomously.
 - Android release builds require an explicit private signing configuration and
   cannot silently use the debug key.
+- Email confirmation and password recovery use separate Android callback hosts;
+  hosted Auth enforces confirmed email, 8-character letter+digit passwords, and
+  password-change reauthentication.
 
 ### Deployment notes
 
 - Live provider keys and allowlists are configured as Supabase Edge Function
   secrets and remain outside Git and mobile artifacts.
-- Android store signing, production Auth URLs, and store metadata remain
-  environment-specific release-owner responsibilities; iOS is deferred.
+- Android upload signing and production Auth URLs are configured on the release
+  workstation/project. Store metadata remains a release-owner responsibility;
+  iOS is deferred.

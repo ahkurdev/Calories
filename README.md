@@ -147,17 +147,18 @@ photo by default. A photo is uploaded only after the user explicitly disables
 
 ## Authentication configuration
 
-Enable Email/Password in Supabase Auth. Add this redirect URL to the project's
-Auth URL allowlist:
+Enable Email/Password in Supabase Auth. Add both Android redirect URLs to the
+project's Auth URL allowlist:
 
 ```text
+caloris://auth-callback
 caloris://reset-password
 ```
 
-For production, configure hosted Auth to require email confirmation, passwords
-of at least eight characters containing letters and digits, secure password
-changes, and an appropriate email resend interval. The checked-in local config
-uses those defaults, but it is not pushed wholesale because its site URL is a
+The linked production project requires email confirmation, passwords of at
+least eight characters containing letters and digits, secure password changes,
+and the two redirect URLs above. These hosted values are patched independently;
+the checked-in local config is not pushed wholesale because its site URL is a
 local development address.
 
 The URL scheme is registered in Android and iOS project files. For production,
@@ -281,7 +282,7 @@ npx --yes deno check --config supabase/functions/generate-weekly-summary/deno.js
 npx --yes deno check --config supabase/functions/recommend-activity/deno.json supabase/functions/recommend-activity/index.ts
 ```
 
-The current gate includes 34 Flutter tests and 23 Deno tests. They cover
+The current gate includes 35 Flutter tests and 23 Deno tests. They cover
 configuration, calorie calculations, Auth, profile,
 food aggregation, progress, schedule validation, scan schema bounds, the visible
 estimate disclaimer, the explicit mock label, mobile function response parsing,
@@ -314,7 +315,10 @@ flutter build appbundle --release --dart-define-from-file=.env
 ```
 
 Release builds intentionally fail until `android/key.properties` is created
-from `android/key.properties.example` with private values kept outside Git.
+from `android/key.properties.example` with private values kept outside Git. The
+current Android release workstation has an ignored `caloris-upload` keystore and
+successfully produces a signed `build/app/outputs/bundle/release/app-release.aab`
+for the permanent application ID `com.caloris.caloris`.
 
 iOS must be built on macOS with a configured signing team:
 
