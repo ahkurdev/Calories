@@ -25,6 +25,22 @@ void main() {
       ],
       preferredFoods: const ['ayam', 'sayur'],
       limitedFoods: const ['santan'],
+      nearbyPlaces: const [
+        NearbyFoodPlace(
+          id: 'place-1',
+          name: 'Warung Sehat',
+          address: 'Jalan Contoh 1',
+          mapsUri: 'https://maps.google.com/?cid=1',
+          websiteUri: 'https://warung.example/menu',
+          rating: 4.5,
+          userRatingCount: 120,
+          priceLevel: 'PRICE_LEVEL_MODERATE',
+          openNow: true,
+          delivery: true,
+          takeout: true,
+          dineIn: false,
+        ),
+      ],
     );
 
     final json = request.toInputJson();
@@ -34,6 +50,10 @@ void main() {
     expect(json['question'], 'Apa yang boleh saya makan malam ini?');
     expect(json['preferredFoods'], ['ayam', 'sayur']);
     expect(json['limitedFoods'], ['santan']);
+    expect(
+      (json['nearbyPlaces'] as List<Object?>).single,
+      isNot(contains('mapsUri')),
+    );
     expect(json, isNot(contains('email')));
     expect(json, isNot(contains('userId')));
   });

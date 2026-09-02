@@ -55,6 +55,61 @@ class FoodConversationMessage {
   };
 }
 
+class NearbyFoodPlace {
+  const NearbyFoodPlace({
+    required this.id,
+    required this.name,
+    required this.address,
+    required this.mapsUri,
+    required this.websiteUri,
+    required this.rating,
+    required this.userRatingCount,
+    required this.priceLevel,
+    required this.openNow,
+    required this.delivery,
+    required this.takeout,
+    required this.dineIn,
+  });
+
+  final String id;
+  final String name;
+  final String address;
+  final String mapsUri;
+  final String websiteUri;
+  final double? rating;
+  final int userRatingCount;
+  final String priceLevel;
+  final bool? openNow;
+  final bool delivery;
+  final bool takeout;
+  final bool dineIn;
+
+  Map<String, Object?> toAiJson() => {
+    'name': name,
+    'address': address,
+    'rating': rating,
+    'priceLevel': priceLevel,
+    'openNow': openNow,
+    'delivery': delivery,
+    'takeout': takeout,
+    'dineIn': dineIn,
+  };
+}
+
+enum NearbyFoodStatus { success, configurationRequired, unavailable }
+
+class NearbyFoodSearchResult {
+  const NearbyFoodSearchResult({
+    required this.status,
+    required this.message,
+    this.places = const [],
+  });
+
+  final NearbyFoodStatus status;
+  final String message;
+  final List<NearbyFoodPlace> places;
+}
+
 class FoodHistoryItem {
   const FoodHistoryItem({
     required this.name,
@@ -91,6 +146,7 @@ class MealRecommendationRequest {
     this.conversation = const [],
     this.preferredFoods = const [],
     this.limitedFoods = const [],
+    this.nearbyPlaces = const [],
   });
 
   final int remainingCalories;
@@ -103,6 +159,7 @@ class MealRecommendationRequest {
   final List<FoodConversationMessage> conversation;
   final List<String> preferredFoods;
   final List<String> limitedFoods;
+  final List<NearbyFoodPlace> nearbyPlaces;
 
   Map<String, Object?> toInputJson() => {
     'remainingCalories': remainingCalories.clamp(0, 10000),
@@ -128,6 +185,10 @@ class MealRecommendationRequest {
         .map((food) => food.trim())
         .where((food) => food.isNotEmpty)
         .take(20)
+        .toList(growable: false),
+    'nearbyPlaces': nearbyPlaces
+        .take(8)
+        .map((place) => place.toAiJson())
         .toList(growable: false),
   };
 }

@@ -2,6 +2,20 @@
 
 Status: **Phase 7 implementation complete — 2026-09-01**
 
+## Android extension checkpoint — 2026-09-02
+
+- [x] Food assistant always validates Indonesian output and keeps chat within
+      food, calorie, portion, and nearby-place scope.
+- [x] Recommendations separate foods to choose from foods to limit/avoid.
+- [x] Successful registration explicitly asks the user to confirm their email.
+- [x] Caloris logo is used in-app and for Android launcher densities.
+- [x] Foreground walking session totals steps, duration, speed, and estimated
+      calories while pausing acceptance above walking speed or without GPS.
+- [x] Nearby-food Edge Function is deployed with JWT verification, bounded
+      coordinates, safe URLs, no location persistence, and Google Maps fallback.
+- [ ] Configure `GOOGLE_PLACES_API_KEY` as a server-only secret after enabling
+      Places API (New), quotas, billing, and budget alerts.
+
 ## Phase 2: Daily calorie and food loop
 
 - [x] BMI, BMR, TDEE, and safe calorie targets are calculated in a pure service.

@@ -19,6 +19,7 @@ import 'package:caloris/features/progress/presentation/pages/progress_page.dart'
 import 'package:caloris/features/recommendations/presentation/pages/food_assistant_page.dart';
 import 'package:caloris/features/recommendations/presentation/pages/insights_page.dart';
 import 'package:caloris/features/schedule/presentation/pages/schedule_page.dart';
+import 'package:caloris/features/walking/presentation/pages/walking_tracker_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -103,6 +104,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const FoodAssistantPage(),
       ),
       GoRoute(path: '/schedule', builder: (_, _) => const SchedulePage()),
+      GoRoute(path: '/walking', builder: (_, _) => const WalkingTrackerPage()),
       GoRoute(path: '/profile', builder: (_, _) => const ProfilePage()),
     ],
   );

@@ -3,6 +3,7 @@ import 'package:caloris/features/recommendations/domain/recommendation_models.da
 import 'package:caloris/features/recommendations/presentation/controllers/recommendations_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class FoodAssistantPage extends ConsumerStatefulWidget {
   const FoodAssistantPage({super.key});
@@ -93,6 +94,19 @@ class _FoodAssistantPageState extends ConsumerState<FoodAssistantPage> {
                       setState(() => _mealType = value),
                   onPracticalModeChanged: (value) =>
                       setState(() => _practicalMode = value),
+                ),
+                const SizedBox(height: 12),
+                _NearbyPlacesSection(
+                  places: state.nearbyPlaces,
+                  message: state.nearbyMessage,
+                  isLoading: state.isLoadingNearby,
+                  onFind: () => ref
+                      .read(foodAssistantControllerProvider.notifier)
+                      .findNearbyFoods(),
+                  onOpen: _openExternalUrl,
+                  onOpenMapsSearch: () => _openExternalUrl(
+                    'https://www.google.com/maps/search/?api=1&query=tempat+makan+sehat',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -224,6 +238,148 @@ class _FoodAssistantPageState extends ConsumerState<FoodAssistantPage> {
       .where((item) => item.isNotEmpty)
       .take(20)
       .toList(growable: false);
+
+  Future<void> _openExternalUrl(String value) async {
+    final uri = Uri.tryParse(value);
+    if (uri == null || uri.scheme != 'https') return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+class _NearbyPlacesSection extends StatelessWidget {
+  const _NearbyPlacesSection({
+    required this.places,
+    required this.message,
+    required this.isLoading,
+    required this.onFind,
+    required this.onOpen,
+    required this.onOpenMapsSearch,
+  });
+
+  final List<NearbyFoodPlace> places;
+  final String? message;
+  final bool isLoading;
+  final VoidCallback onFind;
+  final ValueChanged<String> onOpen;
+  final VoidCallback onOpenMapsSearch;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Tempat makan sekitar',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Lokasi dipakai sekali untuk pencarian radius 1,5 km dan tidak disimpan.',
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonalIcon(
+              onPressed: isLoading ? null : onFind,
+              icon: isLoading
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.near_me_outlined),
+              label: const Text('Cari dengan lokasi saya'),
+            ),
+          ),
+          if (message != null) ...[const SizedBox(height: 10), Text(message!)],
+          if (places.isEmpty && message != null) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: onOpenMapsSearch,
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Buka pencarian Google Maps'),
+            ),
+          ],
+          for (final place in places) ...[
+            const Divider(height: 24),
+            Text(
+              place.name,
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            if (place.address.isNotEmpty) ...[
+              const SizedBox(height: 3),
+              Text(place.address),
+            ],
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (place.rating != null)
+                  Chip(
+                    avatar: const Icon(Icons.star_outline_rounded, size: 18),
+                    label: Text(
+                      '${place.rating!.toStringAsFixed(1)} (${place.userRatingCount})',
+                    ),
+                  ),
+                if (place.openNow != null)
+                  Chip(
+                    avatar: Icon(
+                      place.openNow!
+                          ? Icons.schedule_rounded
+                          : Icons.schedule_outlined,
+                      size: 18,
+                    ),
+                    label: Text(place.openNow! ? 'Buka sekarang' : 'Tutup'),
+                  ),
+                if (place.delivery)
+                  const Chip(label: Text('Delivery tersedia')),
+                if (place.takeout)
+                  const Chip(label: Text('Bisa dibawa pulang')),
+                if (place.dineIn) const Chip(label: Text('Makan di tempat')),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => onOpen(place.mapsUri),
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Buka Maps'),
+                ),
+                if (place.websiteUri.isNotEmpty)
+                  FilledButton.tonalIcon(
+                    onPressed: () => onOpen(place.websiteUri),
+                    icon: const Icon(Icons.shopping_bag_outlined),
+                    label: const Text('Situs / pesan'),
+                  ),
+              ],
+            ),
+          ],
+          if (places.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Text(
+              'Tanyakan rekomendasi setelah daftar dimuat. AI hanya memakai tempat '
+              'di atas; cek kembali menu, harga, dan cara pesan terbaru.',
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
 }
 
 class _ScopeCard extends StatelessWidget {

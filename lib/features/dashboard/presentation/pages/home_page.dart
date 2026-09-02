@@ -198,6 +198,12 @@ class HomePage extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
+              onPressed: () => context.push('/walking'),
+              icon: const Icon(Icons.directions_walk_rounded),
+              label: const Text('Pelacak Jalan & Langkah'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
               onPressed: () =>
                   ref.read(authControllerProvider.notifier).signOut(),
               icon: const Icon(Icons.logout_rounded),

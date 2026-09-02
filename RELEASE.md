@@ -49,11 +49,16 @@ supabase db advisors --linked --type security --level warn --fail-on error
 supabase db advisors --linked --type performance --level warn --fail-on error
 ```
 
-All five functions are active with JWT verification. An authenticated daily
-summary smoke test returned HTTP 200 with a success envelope, then revoked its
+All six functions are active with JWT verification. An authenticated meal
+recommendation smoke test returned HTTP 200 with Indonesian choose/limit
+guidance, then revoked its
 temporary session and deleted its temporary user. Before store rollout, still
 test offline add/sync on a physical Android device and camera/notification
 permissions.
+
+Nearby search is deployed with JWT verification but remains in the honest
+`configuration_required` state until a server-only `GOOGLE_PLACES_API_KEY` is
+configured. Set Google Maps Platform quotas and budget alerts before enabling it.
 
 Current toolchain note: `flutter_timezone` still applies the legacy Kotlin
 Gradle plugin. The present debug build succeeds, but update the plugin when it

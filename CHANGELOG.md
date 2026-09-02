@@ -15,6 +15,14 @@
 - Capability-aware rotating model pools with ordered fallback across the
   configured OpenRouter and OpenCode Zen allowlists.
 - OpenCode Responses API support for Muse Spark 1.2 Contributor Free.
+- Indonesian-only food assistant with separate foods-to-choose and
+  foods-to-limit guidance, bounded food conversation history, and nearby-place
+  context.
+- Caloris logo and Android launcher icons.
+- Foreground walking sessions with step, duration, speed, and estimated calorie
+  totals; vehicle-speed and lost-GPS events pause accepted steps.
+- JWT-protected nearby-food lookup with Google Maps/place links and an honest
+  Maps fallback when Google Places is not configured.
 
 ### Security
 
@@ -26,11 +34,16 @@
 - Email confirmation and password recovery use separate Android callback hosts;
   hosted Auth enforces confirmed email, 8-character letter+digit passwords, and
   password-change reauthentication.
+- Foreground location is requested only from user-triggered nearby/walking
+  actions. Coordinates and routes are not stored, and Maps/provider keys never
+  enter the APK.
 
 ### Fixed
 
 - Current Supabase `invalid_credentials` and `email_not_confirmed` responses now
   show actionable Indonesian messages instead of the generic account fallback.
+- Successful registration now explicitly asks the user to confirm their email
+  before signing in.
 
 ### Deployment notes
 
@@ -39,3 +52,5 @@
 - Android upload signing and production Auth URLs are configured on the release
   workstation/project. Store metadata remains a release-owner responsibility;
   iOS is deferred.
+- Nearby Google Places lookup requires a server-only `GOOGLE_PLACES_API_KEY`;
+  until configured, the app exposes a direct Google Maps search fallback.

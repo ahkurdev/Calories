@@ -3,12 +3,14 @@ import 'package:caloris/features/food/domain/food_models.dart';
 import 'package:caloris/features/profile/domain/user_profile.dart';
 import 'package:caloris/features/profile/presentation/controllers/profile_controller.dart';
 import 'package:caloris/features/recommendations/data/supabase_insights_repository.dart';
+import 'package:caloris/features/recommendations/data/supabase_nearby_food_repository.dart';
 import 'package:caloris/features/recommendations/data/supabase_recommendation_repository.dart';
 import 'package:caloris/features/recommendations/domain/health_statistics.dart';
 import 'package:caloris/features/recommendations/domain/recommendation_models.dart';
 import 'package:caloris/features/recommendations/services/health_statistics_service.dart';
 import 'package:caloris/features/schedule/domain/schedule_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 class HealthInsightsSnapshot {
   const HealthInsightsSnapshot({
@@ -178,21 +180,36 @@ class FoodAssistantState {
     this.messages = const [],
     this.latestResult,
     this.isLoading = false,
+    this.nearbyPlaces = const [],
+    this.isLoadingNearby = false,
+    this.nearbyMessage,
   });
 
   final List<FoodConversationMessage> messages;
   final RecommendationResult? latestResult;
   final bool isLoading;
+  final List<NearbyFoodPlace> nearbyPlaces;
+  final bool isLoadingNearby;
+  final String? nearbyMessage;
 
   FoodAssistantState copyWith({
     List<FoodConversationMessage>? messages,
     RecommendationResult? latestResult,
     bool? isLoading,
+    List<NearbyFoodPlace>? nearbyPlaces,
+    bool? isLoadingNearby,
+    String? nearbyMessage,
+    bool clearNearbyMessage = false,
     bool clearResult = false,
   }) => FoodAssistantState(
     messages: messages ?? this.messages,
     latestResult: clearResult ? null : latestResult ?? this.latestResult,
     isLoading: isLoading ?? this.isLoading,
+    nearbyPlaces: nearbyPlaces ?? this.nearbyPlaces,
+    isLoadingNearby: isLoadingNearby ?? this.isLoadingNearby,
+    nearbyMessage: clearNearbyMessage
+        ? null
+        : nearbyMessage ?? this.nearbyMessage,
   );
 }
 
@@ -250,6 +267,7 @@ class FoodAssistantController extends Notifier<FoodAssistantState> {
                   : previousMessages,
               preferredFoods: preferredFoods,
               limitedFoods: limitedFoods,
+              nearbyPlaces: state.nearbyPlaces,
             ),
           );
     } on Object {
@@ -270,6 +288,57 @@ class FoodAssistantController extends Notifier<FoodAssistantState> {
   }
 
   void clear() => state = const FoodAssistantState();
+
+  Future<void> findNearbyFoods() async {
+    if (state.isLoadingNearby) return;
+    state = state.copyWith(isLoadingNearby: true, clearNearbyMessage: true);
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        state = state.copyWith(
+          isLoadingNearby: false,
+          nearbyMessage:
+              'Aktifkan layanan lokasi untuk mencari tempat sekitar.',
+        );
+        return;
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        state = state.copyWith(
+          isLoadingNearby: false,
+          nearbyMessage:
+              'Izin lokasi diperlukan hanya saat mencari tempat makan sekitar.',
+        );
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+      final result = await ref
+          .read(nearbyFoodRepositoryProvider)
+          .search(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            radiusMeters: 1500,
+          );
+      state = state.copyWith(
+        isLoadingNearby: false,
+        nearbyPlaces: result.places,
+        nearbyMessage: result.message,
+      );
+    } on Object {
+      state = state.copyWith(
+        isLoadingNearby: false,
+        nearbyMessage: 'Lokasi atau tempat sekitar belum dapat dimuat. Coba buka Google Maps.',
+      );
+    }
+  }
 
   List<FoodConversationMessage> _boundedMessages(
     List<FoodConversationMessage> messages,

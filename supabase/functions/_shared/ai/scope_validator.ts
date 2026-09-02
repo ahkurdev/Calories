@@ -24,6 +24,7 @@ const allowedKeys: Record<AITaskType, ReadonlySet<string>> = {
     "conversation",
     "preferredFoods",
     "limitedFoods",
+    "nearbyPlaces",
   ]),
   [AITaskType.dailySummary]: new Set(["stats"]),
   [AITaskType.weeklySummary]: new Set(["stats"]),
@@ -218,6 +219,7 @@ function validateFoodRecommendationInput(input: Record<string, unknown>) {
     "Invalid limited foods.",
   );
   validateFoodConversation(input.conversation);
+  validateNearbyPlaces(input.nearbyPlaces);
   if (typeof input.practicalMode !== "boolean") {
     invalid("Invalid practical mode.");
   }
@@ -274,9 +276,43 @@ function validateFoodQuestionScope(input: Record<string, unknown>) {
     : "";
   const context = `${conversation} ${input.question}`.toLocaleLowerCase("id");
   const foodTerms =
-    /\b(?:makanan?|makan|menu|kalori|kcal|porsi|nasi|lauk|sayur|buah|minum(?:an)?|sarapan|siang|malam|camilan|protein|karbohidrat|lemak|serat|diet|alergi|pantangan|boleh|batasi|hindari|masak|goreng|bakar|rebus|food|meal|calorie|portion|nutrition)\b/i;
+    /\b(?:makanan?|makan|menu|kalori|kcal|porsi|nasi|lauk|sayur|buah|minum(?:an)?|sarapan|siang|malam|camilan|protein|karbohidrat|lemak|serat|diet|alergi|pantangan|boleh|batasi|hindari|masak|goreng|bakar|rebus|restoran|warung|kafe|kedai|pesan|delivery|tempat|food|meal|calorie|portion|nutrition)\b/i;
   if (!foodTerms.test(context)) {
     invalid("Question is outside food recommendation scope.");
+  }
+}
+
+function validateNearbyPlaces(value: unknown) {
+  if (value === undefined) return;
+  if (!Array.isArray(value) || value.length > 8) {
+    invalid("Invalid nearby food places.");
+  }
+  for (const place of value) {
+    if (!isPlainObject(place)) invalid("Invalid nearby food place.");
+    exactKeys(place, [
+      "name",
+      "address",
+      "rating",
+      "priceLevel",
+      "openNow",
+      "delivery",
+      "takeout",
+      "dineIn",
+    ]);
+    boundedString(place.name, 1, 120, "Invalid nearby place name.");
+    optionalString(place.address, 300, "Invalid nearby place address.");
+    if (
+      place.rating !== null && place.rating !== undefined &&
+      (typeof place.rating !== "number" || !Number.isFinite(place.rating) ||
+        place.rating < 0 || place.rating > 5)
+    ) invalid("Invalid nearby place rating.");
+    optionalString(place.priceLevel, 60, "Invalid nearby price level.");
+    for (const key of ["openNow", "delivery", "takeout", "dineIn"]) {
+      if (
+        place[key] !== null && place[key] !== undefined &&
+        typeof place[key] !== "boolean"
+      ) invalid(`Invalid nearby place field: ${key}.`);
+    }
   }
 }
 

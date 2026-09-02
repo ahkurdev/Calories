@@ -34,12 +34,16 @@ Phases 1–7 are implemented:
 - strict task/input/output validation, prompt-injection rejection, and no
   provider secret exposure to Flutter
 - deterministic daily/weekly statistics and scoped meal/activity/summary UI
+- Indonesian-only food conversation with explicit choose/limit guidance,
+  nearby-place context, and Google Maps/order links
+- foreground walking sessions with sensor-step, pedestrian-state, GPS-speed,
+  duration, and calorie estimation
 - per-user SQLite profile/diary cache, idempotent food mutation outbox, visible
   pending-sync state, bounded cache retention, and logout cleanup
 - release-safe Android signing configuration, changelog, rollout, monitoring,
   and rollback runbook
 
-All five AI functions are deployed to the linked Supabase project with JWT
+All six feature functions are deployed to the linked Supabase project with JWT
 verification and per-user worker rate limiting enabled. Provider keys are
 intentionally not committed. Until at least one provider is configured through
 Edge Function secrets, authenticated requests return an honest manual-input
@@ -177,6 +181,7 @@ Phase 5 exposes only these authenticated, feature-specific functions:
 - `generate-daily-summary` (`daily_summary`)
 - `generate-weekly-summary` (`weekly_summary`)
 - `recommend-activity` (`schedule_recommendation`)
+- `nearby-food` (bounded Google Places lookup; no general AI task)
 
 There is no `ask-ai`, free prompt, general chat, tool execution, filesystem
 access, or direct database mutation. Flutter sends typed feature data and treats
@@ -187,6 +192,7 @@ Store provider keys only as Edge Function secrets:
 ```bash
 supabase secrets set OPENROUTER_API_KEY=YOUR_KEY
 supabase secrets set OPENCODE_API_KEY=YOUR_KEY
+supabase secrets set GOOGLE_PLACES_API_KEY=YOUR_SERVER_ONLY_KEY
 ```
 
 Do not commit these values, return them from an Edge Function, or place them in
@@ -205,6 +211,7 @@ OPENROUTER_ALLOWED_MODELS=z-ai/glm-5.2:free,minimax/minimax-m3:free,nvidia/nemot
 OPENCODE_ENABLED=true
 OPENCODE_PRIORITY=2
 OPENCODE_ALLOWED_MODELS=big-pickle,mimo-v2.5-free,laguna-s-2.1-free,ling-3.0-flash-fin-free,muse-spark-1.2-contributor-free,nemotron-3.5-lightning-free
+GOOGLE_PLACES_API_KEY=YOUR_SERVER_ONLY_GOOGLE_MAPS_PLATFORM_KEY
 AI_TIMEOUT_MS=20000
 AI_MAX_RETRIES=1
 AI_CIRCUIT_FAILURE_THRESHOLD=3
@@ -228,12 +235,32 @@ Deploy all functions through the Supabase API without Docker:
 
 ```bash
 supabase functions deploy analyze-food recommend-meal generate-daily-summary generate-weekly-summary recommend-activity --use-api --project-ref YOUR_PROJECT_REF --jobs 2
+supabase functions deploy nearby-food --use-api --project-ref YOUR_PROJECT_REF
 supabase functions list --project-ref YOUR_PROJECT_REF
 ```
 
 The gateway and generated function wrappers both require an authenticated user.
 Missing keys, provider failures, rate limits, invalid responses, and exhausted
 fallbacks return a bounded manual-input response instead of fabricated food data.
+
+`nearby-food` uses Places API Nearby Search (New), requests only bounded place
+fields, and never stores coordinates. Enable Places API (New) and billing before
+setting `GOOGLE_PLACES_API_KEY`. Google may charge for requested place fields,
+so configure quotas and budget alerts. Without the secret, Caloris returns
+`configuration_required` and offers direct Google Maps search.
+
+## Location and walking sessions
+
+Android asks for `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, and
+`ACTIVITY_RECOGNITION` only after the user starts a nearby search or walking
+session. Caloris does not request background location. Walking totals are kept
+for the current in-app session; coordinates and routes are not persisted.
+
+Accepted steps require both a walking state from the device pedometer and GPS
+speed at or below 2.8 m/s (about 10.1 km/h). Faster movement and missing GPS
+pause step acceptance to reduce car/motorcycle counts. Phone sensors cannot
+guarantee perfect transport classification, so the UI labels steps and calories
+as estimates.
 
 ## Camera permissions and development mock
 
@@ -282,7 +309,7 @@ npx --yes deno check --config supabase/functions/generate-weekly-summary/deno.js
 npx --yes deno check --config supabase/functions/recommend-activity/deno.json supabase/functions/recommend-activity/index.ts
 ```
 
-The current gate includes 37 Flutter tests and 23 Deno tests. They cover
+The current gate includes 45 Flutter tests and 29 Deno tests. They cover
 configuration, calorie calculations, Auth, profile,
 food aggregation, progress, schedule validation, scan schema bounds, the visible
 estimate disclaimer, the explicit mock label, mobile function response parsing,
@@ -290,7 +317,8 @@ AI scope enforcement, free-model filtering, provider fallback, timeouts, circuit
 breaking, per-user rate limiting, response normalization, prompt-injection
 rejection, image media-signature validation, capability-aware model rotation,
 OpenCode Responses routing, deterministic statistics, minimized recommendation
-payloads, and offline cache/outbox behavior.
+payloads, nearby-place/link validation, walking-speed filtering, and offline
+cache/outbox behavior.
 
 Remote database verification without Docker:
 

@@ -74,6 +74,16 @@ Deno.test("scope validator accepts minimized recommendation inputs", () => {
     }],
     preferredFoods: ["ayam", "sayur"],
     limitedFoods: ["santan"],
+    nearbyPlaces: [{
+      name: "Warung Sehat",
+      address: "Jalan Contoh 1",
+      rating: 4.5,
+      priceLevel: "PRICE_LEVEL_MODERATE",
+      openNow: true,
+      delivery: true,
+      takeout: true,
+      dineIn: false,
+    }],
   });
   AIScopeValidator.validate(AITaskType.scheduleRecommendation, {
     dayOfWeek: 2,
