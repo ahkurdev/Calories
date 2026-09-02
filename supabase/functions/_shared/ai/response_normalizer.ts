@@ -37,6 +37,8 @@ export class AIResponseNormalizer {
       task === AITaskType.foodScan || task === AITaskType.foodCalorieEstimation
     ) {
       validateFoodResult(parsed);
+    } else if (task === AITaskType.foodRecommendation) {
+      validateFoodRecommendationResult(parsed);
     } else {
       validateTextResult(task, parsed);
     }
@@ -101,6 +103,7 @@ function validateFoodResult(value: Record<string, unknown>) {
   if (typeof value.notes !== "string" || value.notes.length > 1_000) {
     invalid("Invalid notes.");
   }
+  if (value.notes.length > 0) validateIndonesianText(value.notes);
   if (
     value.confidence !== undefined && !boundedNumber(value.confidence, 0, 1)
   ) {
@@ -108,6 +111,53 @@ function validateFoodResult(value: Record<string, unknown>) {
   }
   if (value.status === "not_food" && value.foods.length !== 0) {
     invalid("Not-food response cannot contain foods.");
+  }
+}
+
+function validateFoodRecommendationResult(value: Record<string, unknown>) {
+  if (!["success", "out_of_scope"].includes(String(value.status))) {
+    invalid("Invalid status.");
+  }
+  if (value.status === "out_of_scope") {
+    exactKeys(value, ["status", "message"]);
+    validateText(value.message);
+    validateIndonesianText(value.message);
+    return;
+  }
+  exactKeys(value, [
+    "status",
+    "recommendation",
+    "foods_to_choose",
+    "foods_to_limit",
+    "disclaimer",
+  ]);
+  validateText(value.recommendation);
+  validateIndonesianText(value.recommendation);
+  validateGuidanceItems(value.foods_to_choose, "Invalid foods to choose.");
+  validateGuidanceItems(value.foods_to_limit, "Invalid foods to limit.");
+  if (
+    typeof value.disclaimer !== "string" || value.disclaimer.length < 1 ||
+    value.disclaimer.length > 500
+  ) {
+    invalid("Invalid food recommendation disclaimer.");
+  }
+  validateIndonesianText(value.disclaimer);
+}
+
+function validateGuidanceItems(value: unknown, message: string) {
+  if (!Array.isArray(value) || value.length > 8) invalid(message);
+  for (const item of value) {
+    if (!isPlainObject(item)) invalid(message);
+    exactKeys(item, ["name", "reason"]);
+    if (
+      typeof item.name !== "string" || item.name.trim().length < 1 ||
+      item.name.length > 120
+    ) invalid(message);
+    if (
+      typeof item.reason !== "string" || item.reason.trim().length < 1 ||
+      item.reason.length > 300
+    ) invalid(message);
+    validateIndonesianText(item.reason);
   }
 }
 
@@ -121,6 +171,7 @@ function validateTextResult(
   if (value.status === "out_of_scope") {
     exactKeys(value, ["status", "message"]);
     validateText(value.message);
+    validateIndonesianText(value.message);
     return;
   }
   const contentKey = task === AITaskType.dailySummary ||
@@ -129,6 +180,16 @@ function validateTextResult(
     : "recommendation";
   exactKeys(value, ["status", contentKey]);
   validateText(value[contentKey]);
+  validateIndonesianText(value[contentKey]);
+}
+
+function validateIndonesianText(content: unknown) {
+  if (typeof content !== "string") invalid("Invalid Indonesian text.");
+  const marker =
+    /\b(?:dan|yang|untuk|dengan|kamu|anda|pilih|makanan|kalori|porsi|sebaiknya|dapat|bisa|cukup|hari|menu|batasi|hindari|karena|tetap|sekitar|ini|tidak|dari|pada|atau|serta|sudah|lebih)\b/i;
+  if (!marker.test(content)) {
+    invalid("Provider response must use Bahasa Indonesia.");
+  }
 }
 
 function validateText(content: unknown) {

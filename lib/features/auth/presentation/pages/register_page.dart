@@ -1,4 +1,5 @@
 import 'package:caloris/core/utils/input_validators.dart';
+import 'package:caloris/features/auth/domain/auth_messages.dart';
 import 'package:caloris/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:caloris/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:caloris/shared/widgets/async_action_button.dart';
@@ -117,14 +118,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           password: _passwordController.text,
         );
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Akun dibuat. Periksa email jika verifikasi diminta.'),
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          icon: const Icon(Icons.mark_email_read_outlined),
+          title: const Text('Konfirmasi email Anda'),
+          content: const Text(signupConfirmationMessage),
+          actions: [
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                context.go('/login');
+              },
+              child: const Text('Ke halaman masuk'),
+            ),
+          ],
         ),
       );
-      if (ref.read(authControllerProvider).session.userId == null) {
-        context.go('/login');
-      }
     }
   }
 }

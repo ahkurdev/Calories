@@ -172,3 +172,108 @@ class RecommendationsController extends Notifier<RecommendationsState> {
     );
   }
 }
+
+class FoodAssistantState {
+  const FoodAssistantState({
+    this.messages = const [],
+    this.latestResult,
+    this.isLoading = false,
+  });
+
+  final List<FoodConversationMessage> messages;
+  final RecommendationResult? latestResult;
+  final bool isLoading;
+
+  FoodAssistantState copyWith({
+    List<FoodConversationMessage>? messages,
+    RecommendationResult? latestResult,
+    bool? isLoading,
+    bool clearResult = false,
+  }) => FoodAssistantState(
+    messages: messages ?? this.messages,
+    latestResult: clearResult ? null : latestResult ?? this.latestResult,
+    isLoading: isLoading ?? this.isLoading,
+  );
+}
+
+final foodAssistantControllerProvider =
+    NotifierProvider<FoodAssistantController, FoodAssistantState>(
+      FoodAssistantController.new,
+    );
+
+class FoodAssistantController extends Notifier<FoodAssistantState> {
+  @override
+  FoodAssistantState build() => const FoodAssistantState();
+
+  Future<void> send(
+    HealthInsightsSnapshot snapshot, {
+    required String question,
+    required MealType mealType,
+    required List<String> preferredFoods,
+    required List<String> limitedFoods,
+    required bool practicalMode,
+    String preference = '',
+  }) async {
+    final cleanQuestion = question.trim();
+    if (cleanQuestion.isEmpty || state.isLoading) return;
+    final previousMessages = state.messages;
+    final userMessage = FoodConversationMessage(
+      role: FoodConversationRole.user,
+      content: cleanQuestion,
+    );
+    state = state.copyWith(
+      messages: _boundedMessages([...previousMessages, userMessage]),
+      isLoading: true,
+      clearResult: true,
+    );
+
+    final history = snapshot.foodHistory.toList()
+      ..sort((a, b) => b.loggedAt.compareTo(a.loggedAt));
+    RecommendationResult result;
+    try {
+      result = await ref
+          .read(recommendationRepositoryProvider)
+          .recommendMeal(
+            MealRecommendationRequest(
+              remainingCalories: snapshot.daily.remainingCalories,
+              goal: snapshot.goal,
+              mealType: mealType,
+              preference: preference,
+              practicalMode: practicalMode,
+              foodHistory: history
+                  .take(30)
+                  .map(FoodHistoryItem.fromLog)
+                  .toList(growable: false),
+              question: cleanQuestion,
+              conversation: previousMessages.length > 8
+                  ? previousMessages.sublist(previousMessages.length - 8)
+                  : previousMessages,
+              preferredFoods: preferredFoods,
+              limitedFoods: limitedFoods,
+            ),
+          );
+    } on Object {
+      result = const RecommendationResult.manualFallback(
+        'Asisten makanan sedang tidak tersedia. Coba lagi beberapa saat.',
+      );
+    }
+
+    final assistantMessage = FoodConversationMessage(
+      role: FoodConversationRole.assistant,
+      content: result.message,
+    );
+    state = state.copyWith(
+      messages: _boundedMessages([...state.messages, assistantMessage]),
+      latestResult: result,
+      isLoading: false,
+    );
+  }
+
+  void clear() => state = const FoodAssistantState();
+
+  List<FoodConversationMessage> _boundedMessages(
+    List<FoodConversationMessage> messages,
+  ) => List.unmodifiable(
+    messages.length > 20 ? messages.sublist(messages.length - 20) : messages,
+  );
+}

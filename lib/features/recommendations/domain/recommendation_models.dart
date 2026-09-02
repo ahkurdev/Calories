@@ -5,18 +5,54 @@ import 'package:caloris/features/schedule/domain/schedule_models.dart';
 enum RecommendationStatus { success, manualFallback, outOfScope }
 
 class RecommendationResult {
-  const RecommendationResult({required this.status, required this.message});
+  const RecommendationResult({
+    required this.status,
+    required this.message,
+    this.foodsToChoose = const [],
+    this.foodsToLimit = const [],
+    this.disclaimer = '',
+  });
 
   const RecommendationResult.manualFallback([String? message])
     : status = RecommendationStatus.manualFallback,
-      message =
-          message ??
-          'Insight AI sedang tidak tersedia. Statistik dasarmu tetap dapat dilihat.';
+      message = message ?? 'Insight AI sedang tidak tersedia. Statistik dasarmu tetap dapat dilihat.',
+      foodsToChoose = const [],
+      foodsToLimit = const [],
+      disclaimer = '';
 
   final RecommendationStatus status;
   final String message;
+  final List<FoodGuidanceItem> foodsToChoose;
+  final List<FoodGuidanceItem> foodsToLimit;
+  final String disclaimer;
 
   bool get isAiGenerated => status == RecommendationStatus.success;
+}
+
+class FoodGuidanceItem {
+  const FoodGuidanceItem({required this.name, required this.reason});
+
+  final String name;
+  final String reason;
+}
+
+enum FoodConversationRole {
+  user,
+  assistant;
+
+  String get value => name;
+}
+
+class FoodConversationMessage {
+  const FoodConversationMessage({required this.role, required this.content});
+
+  final FoodConversationRole role;
+  final String content;
+
+  Map<String, String> toJson() => {
+    'role': role.value,
+    'content': content.trim(),
+  };
 }
 
 class FoodHistoryItem {
@@ -51,6 +87,10 @@ class MealRecommendationRequest {
     required this.preference,
     required this.practicalMode,
     required this.foodHistory,
+    this.question = '',
+    this.conversation = const [],
+    this.preferredFoods = const [],
+    this.limitedFoods = const [],
   });
 
   final int remainingCalories;
@@ -59,6 +99,10 @@ class MealRecommendationRequest {
   final String preference;
   final bool practicalMode;
   final List<FoodHistoryItem> foodHistory;
+  final String question;
+  final List<FoodConversationMessage> conversation;
+  final List<String> preferredFoods;
+  final List<String> limitedFoods;
 
   Map<String, Object?> toInputJson() => {
     'remainingCalories': remainingCalories.clamp(0, 10000),
@@ -70,6 +114,21 @@ class MealRecommendationRequest {
         .map((item) => item.toJson())
         .toList(growable: false),
     'practicalMode': practicalMode,
+    'question': question.trim(),
+    'conversation': conversation
+        .skip(conversation.length > 8 ? conversation.length - 8 : 0)
+        .map((message) => message.toJson())
+        .toList(growable: false),
+    'preferredFoods': preferredFoods
+        .map((food) => food.trim())
+        .where((food) => food.isNotEmpty)
+        .take(20)
+        .toList(growable: false),
+    'limitedFoods': limitedFoods
+        .map((food) => food.trim())
+        .where((food) => food.isNotEmpty)
+        .take(20)
+        .toList(growable: false),
   };
 }
 

@@ -77,6 +77,63 @@ void main() {
       );
     },
   );
+
+  test(
+    'food assistant keeps a bounded food conversation and guidance',
+    () async {
+      final repository = _FakeRecommendationRepository();
+      final container = ProviderContainer(
+        overrides: [
+          recommendationRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+      final snapshot = HealthInsightsSnapshot(
+        daily: DailyHealthStatistics(
+          day: DateTime(2026, 9, 1),
+          targetCalories: 1900,
+          consumedCalories: 1350,
+          waterMl: 1500,
+          waterTargetMl: 2000,
+          activityMinutes: 20,
+          estimatedActivityCalories: 80,
+        ),
+        weekly: WeeklyHealthStatistics(
+          start: DateTime(2026, 8, 26),
+          endExclusive: DateTime(2026, 9, 2),
+          targetCalories: 1900,
+          averageCaloriesOnTrackedDays: 1700,
+          calorieTrackingDays: 6,
+          averageWaterOnTrackedDays: 1800,
+          waterTrackingDays: 6,
+          totalActivityMinutes: 90,
+          activeDays: 4,
+          frequentFoods: const ['Nasi'],
+        ),
+        goal: HealthGoal.loseWeight,
+        foodHistory: const [],
+        schedules: const [],
+      );
+
+      await container
+          .read(foodAssistantControllerProvider.notifier)
+          .send(
+            snapshot,
+            question: 'Makanan apa yang boleh saya pilih?',
+            mealType: MealType.dinner,
+            preferredFoods: const ['ayam'],
+            limitedFoods: const ['santan'],
+            practicalMode: true,
+          );
+
+      expect(repository.mealRequest?.question, contains('boleh'));
+      expect(repository.mealRequest?.preferredFoods, ['ayam']);
+      expect(
+        container.read(foodAssistantControllerProvider).messages,
+        hasLength(2),
+      );
+    },
+  );
 }
 
 class _FakeRecommendationRepository implements RecommendationRepository {

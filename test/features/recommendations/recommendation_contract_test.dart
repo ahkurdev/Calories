@@ -16,12 +16,24 @@ void main() {
       foodHistory: [
         FoodHistoryItem(name: 'Nasi', calories: 200, mealType: MealType.lunch),
       ],
+      question: 'Apa yang boleh saya makan malam ini?',
+      conversation: const [
+        FoodConversationMessage(
+          role: FoodConversationRole.user,
+          content: 'Saya ingin makanan yang praktis.',
+        ),
+      ],
+      preferredFoods: const ['ayam', 'sayur'],
+      limitedFoods: const ['santan'],
     );
 
     final json = request.toInputJson();
 
     expect(json['goal'], 'lose_weight');
     expect(json['practicalMode'], isTrue);
+    expect(json['question'], 'Apa yang boleh saya makan malam ini?');
+    expect(json['preferredFoods'], ['ayam', 'sayur']);
+    expect(json['limitedFoods'], ['santan']);
     expect(json, isNot(contains('email')));
     expect(json, isNot(contains('userId')));
   });
@@ -75,5 +87,29 @@ void main() {
     expect(success.message, contains('konsisten'));
     expect(fallback.isAiGenerated, isFalse);
     expect(fallback.message, contains('belum tersedia'));
+  });
+
+  test('function parser maps food choices and foods to limit', () {
+    final result = RecommendationFunctionParser.parse({
+      'status': 'success',
+      'recommendation': 'Pilih menu yang sesuai sisa kalorimu.',
+      'foods_to_choose': [
+        {
+          'name': 'Ayam bakar',
+          'reason': 'Protein praktis dengan tambahan sayur.',
+        },
+      ],
+      'foods_to_limit': [
+        {
+          'name': 'Gorengan',
+          'reason': 'Batasi porsinya karena kalorinya cepat bertambah.',
+        },
+      ],
+      'disclaimer': 'Bukan pengganti nasihat medis.',
+    }, contentKey: 'recommendation');
+
+    expect(result.foodsToChoose.single.name, 'Ayam bakar');
+    expect(result.foodsToLimit.single.name, 'Gorengan');
+    expect(result.disclaimer, contains('medis'));
   });
 }

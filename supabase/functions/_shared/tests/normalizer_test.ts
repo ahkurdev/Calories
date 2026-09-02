@@ -54,3 +54,39 @@ Deno.test("normalizer enforces the exact text contract for each task", () => {
     );
   }
 });
+
+Deno.test("normalizer accepts structured Indonesian food guidance", () => {
+  const result = AIResponseNormalizer.normalize(
+    AITaskType.foodRecommendation,
+    JSON.stringify({
+      status: "success",
+      recommendation:
+        "Untuk makan malam, pilih porsi yang cukup dan tetap perhatikan rasa lapar.",
+      foods_to_choose: [{
+        name: "Ayam bakar",
+        reason: "Protein yang praktis dan mudah dipadukan dengan sayur.",
+      }],
+      foods_to_limit: [{
+        name: "Gorengan",
+        reason: "Batasi porsinya karena kalorinya mudah bertambah.",
+      }],
+      disclaimer:
+        "Rekomendasi ini bersifat umum dan bukan pengganti nasihat medis.",
+    }),
+  );
+
+  if (!Array.isArray(result.foods_to_choose)) {
+    throw new Error("Expected foods_to_choose");
+  }
+});
+
+Deno.test("normalizer rejects English-only AI answers", () => {
+  assertThrows(
+    () =>
+      AIResponseNormalizer.normalize(
+        AITaskType.dailySummary,
+        '{"status":"success","summary":"Your calorie intake is close to the daily target."}',
+      ),
+    "invalid_response",
+  );
+});

@@ -16,17 +16,14 @@ class BrandHeader extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Icon(
-                    Icons.eco_rounded,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.asset(
+                  'assets/branding/caloris_logo.png',
+                  width: compact ? 44 : 52,
+                  height: compact ? 44 : 52,
+                  fit: BoxFit.cover,
+                  semanticLabel: 'Logo Caloris',
                 ),
               ),
               const SizedBox(width: 12),

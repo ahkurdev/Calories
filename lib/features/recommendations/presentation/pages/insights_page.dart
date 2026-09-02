@@ -5,6 +5,7 @@ import 'package:caloris/features/schedule/domain/schedule_models.dart';
 import 'package:caloris/shared/widgets/app_bottom_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class InsightsPage extends ConsumerStatefulWidget {
   const InsightsPage({super.key});
@@ -83,6 +84,19 @@ class _InsightsPageState extends ConsumerState<InsightsPage> {
           'Rekomendasi makanan',
           style: Theme.of(context).textTheme.titleLarge
               ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        Card(
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: const Icon(Icons.forum_outlined),
+            title: const Text('Chat dengan Asisten Makanan'),
+            subtitle: const Text(
+              'Tanyakan makanan yang boleh dipilih, perlu dibatasi, menu, atau porsi.',
+            ),
+            trailing: const Icon(Icons.arrow_forward_rounded),
+            onTap: () => context.push('/food-assistant'),
+          ),
         ),
         const SizedBox(height: 10),
         Card(

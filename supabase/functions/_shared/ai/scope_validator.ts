@@ -20,6 +20,10 @@ const allowedKeys: Record<AITaskType, ReadonlySet<string>> = {
     "preference",
     "foodHistory",
     "practicalMode",
+    "question",
+    "conversation",
+    "preferredFoods",
+    "limitedFoods",
   ]),
   [AITaskType.dailySummary]: new Set(["stats"]),
   [AITaskType.weeklySummary]: new Set(["stats"]),
@@ -200,6 +204,20 @@ function validateFoodRecommendationInput(input: Record<string, unknown>) {
     "Invalid meal type.",
   );
   optionalString(input.preference, 500, "Invalid preference.");
+  optionalString(input.question, 500, "Invalid food question.");
+  validateStringList(
+    input.preferredFoods,
+    20,
+    100,
+    "Invalid preferred foods.",
+  );
+  validateStringList(
+    input.limitedFoods,
+    20,
+    100,
+    "Invalid limited foods.",
+  );
+  validateFoodConversation(input.conversation);
   if (typeof input.practicalMode !== "boolean") {
     invalid("Invalid practical mode.");
   }
@@ -217,6 +235,60 @@ function validateFoodRecommendationInput(input: Record<string, unknown>) {
       "Invalid food meal type.",
     );
   }
+  validateFoodQuestionScope(input);
+}
+
+function validateFoodConversation(value: unknown) {
+  if (value === undefined) return;
+  if (!Array.isArray(value) || value.length > 8) {
+    invalid("Invalid food conversation.");
+  }
+  for (const message of value) {
+    if (!isPlainObject(message)) invalid("Invalid conversation message.");
+    exactKeys(message, ["role", "content"]);
+    enumString(
+      message.role,
+      ["user", "assistant"],
+      "Invalid conversation role.",
+    );
+    boundedString(
+      message.content,
+      1,
+      1_000,
+      "Invalid conversation content.",
+    );
+  }
+}
+
+function validateFoodQuestionScope(input: Record<string, unknown>) {
+  if (
+    typeof input.question !== "string" || input.question.trim().length === 0
+  ) {
+    return;
+  }
+  const conversation = Array.isArray(input.conversation)
+    ? input.conversation
+      .filter(isPlainObject)
+      .map((message) => String(message.content ?? ""))
+      .join(" ")
+    : "";
+  const context = `${conversation} ${input.question}`.toLocaleLowerCase("id");
+  const foodTerms =
+    /\b(?:makanan?|makan|menu|kalori|kcal|porsi|nasi|lauk|sayur|buah|minum(?:an)?|sarapan|siang|malam|camilan|protein|karbohidrat|lemak|serat|diet|alergi|pantangan|boleh|batasi|hindari|masak|goreng|bakar|rebus|food|meal|calorie|portion|nutrition)\b/i;
+  if (!foodTerms.test(context)) {
+    invalid("Question is outside food recommendation scope.");
+  }
+}
+
+function validateStringList(
+  value: unknown,
+  maxItems: number,
+  maxLength: number,
+  message: string,
+) {
+  if (value === undefined) return;
+  if (!Array.isArray(value) || value.length > maxItems) invalid(message);
+  for (const item of value) boundedString(item, 1, maxLength, message);
 }
 
 function validateDailyStats(value: unknown) {

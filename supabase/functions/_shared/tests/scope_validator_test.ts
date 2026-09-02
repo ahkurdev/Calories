@@ -67,6 +67,13 @@ Deno.test("scope validator accepts minimized recommendation inputs", () => {
     preference: "tanpa santan",
     foodHistory: [{ name: "Nasi", calories: 200, mealType: "lunch" }],
     practicalMode: true,
+    question: "Makanan apa yang boleh saya pilih untuk makan malam?",
+    conversation: [{
+      role: "user",
+      content: "Saya ingin menu makan malam yang sederhana.",
+    }],
+    preferredFoods: ["ayam", "sayur"],
+    limitedFoods: ["santan"],
   });
   AIScopeValidator.validate(AITaskType.scheduleRecommendation, {
     dayOfWeek: 2,
@@ -79,6 +86,47 @@ Deno.test("scope validator accepts minimized recommendation inputs", () => {
       busynessLevel: 3,
     }],
   });
+});
+
+Deno.test("scope validator rejects general chat outside food scope", () => {
+  assertThrows(
+    () =>
+      AIScopeValidator.validate(AITaskType.foodRecommendation, {
+        remainingCalories: 500,
+        goal: "maintain_weight",
+        mealType: "dinner",
+        preference: "",
+        foodHistory: [],
+        practicalMode: true,
+        question: "Siapa presiden Indonesia sekarang?",
+        conversation: [],
+        preferredFoods: [],
+        limitedFoods: [],
+      }),
+    "out_of_scope",
+  );
+});
+
+Deno.test("scope validator bounds food conversation and preference lists", () => {
+  assertThrows(
+    () =>
+      AIScopeValidator.validate(AITaskType.foodRecommendation, {
+        remainingCalories: 500,
+        goal: "maintain_weight",
+        mealType: "dinner",
+        preference: "",
+        foodHistory: [],
+        practicalMode: true,
+        question: "Menu makanan apa yang cocok?",
+        conversation: Array.from(
+          { length: 9 },
+          () => ({ role: "user", content: "Makanan apa?" }),
+        ),
+        preferredFoods: [],
+        limitedFoods: [],
+      }),
+    "out_of_scope",
+  );
 });
 
 Deno.test("scope validator rejects invalid nested recommendation data", () => {
